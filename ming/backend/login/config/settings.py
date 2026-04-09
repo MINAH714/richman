@@ -99,5 +99,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # 3. 최신버전 경고 해결용 인증 설정
 ACCOUNT_LOGIN_METHODS = {'username'}  # 구 AUTHENTICATION_METHOD
-ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_SIGNUP_FIELDS = ['email'] # 필요한 경우 추가
