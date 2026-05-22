@@ -1,4 +1,22 @@
-.venv
-**package-lock.json
-**package.json
-**node_modules
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Django static
+staticfiles/
+
+# Node
+frontend/node_modules/
+
+# Env
+.env
+
+# Mac
+.DS_Store
+
+# VSCode
+.vscode/
+
+.venv*
