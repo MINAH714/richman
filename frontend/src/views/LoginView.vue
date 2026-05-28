@@ -2,31 +2,24 @@
 import { ref } from 'vue'
 import axios from '@/api/axios'
 
-// 기존 로그인 상태
 const username = ref('')
 const password = ref('')
 
-// 기존 일반 로그인
 const login = async () => {
   try {
     const response = await axios.post('/accounts/login/', {
       username: username.value,
       password: password.value,
     })
-
     console.log(response.data)
   } catch (error) {
     console.error(error)
   }
 }
 
-// Google OAuth 로그인
 const googleLogin = () => {
   const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-
-  const REDIRECT_URI =
-    'http://localhost:5173/oauth/google/callback'
-
+  const REDIRECT_URI = 'http://localhost:5173/oauth/google/callback'
   const scope = 'email profile'
 
   const googleURL =
@@ -38,53 +31,40 @@ const googleLogin = () => {
 
   window.location.href = googleURL
 }
+
+const naverLogin = () => {
+  const state = Math.random().toString(36).substring(2)
+  const naverURL =
+    `https://nid.naver.com/oauth2.0/authorize` +
+    `?client_id=${import.meta.env.VITE_NAVER_CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(import.meta.env.VITE_NAVER_REDIRECT_URI)}` +
+    `&response_type=code` +
+    `&state=${state}`
+
+  window.location.href = naverURL
+}
 </script>
 
 <template>
   <div class="login-container">
     <h1>로그인</h1>
 
-    <!-- 일반 로그인 -->
     <form @submit.prevent="login">
       <div>
-        <input
-          v-model="username"
-          type="text"
-          placeholder="아이디"
-        />
+        <input v-model="username" type="text" placeholder="아이디" />
       </div>
-
       <div>
-        <input
-          v-model="password"
-          type="password"
-          placeholder="비밀번호"
-        />
+        <input v-model="password" type="password" placeholder="비밀번호" />
       </div>
-
-      <button type="submit">
-        로그인
-      </button>
+      <button type="submit">로그인</button>
     </form>
 
     <hr />
 
-    <!-- 소셜 로그인 -->
     <div class="social-login">
-      <button
-        type="button"
-        @click="googleLogin"
-      >
-        Google 로그인
-      </button>
-
-      <button type="button">
-        Kakao 로그인
-      </button>
-
-      <button type="button">
-        Naver 로그인
-      </button>
+      <button type="button" @click="googleLogin">Google 로그인</button>
+      <button type="button" @click="kakaoLogin">Kakao 로그인</button>
+      <button type="button" @click="naverLogin">Naver 로그인</button>
     </div>
   </div>
 </template>

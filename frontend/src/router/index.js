@@ -20,6 +20,10 @@ const routes = [
   name: 'google-callback',
   component: GoogleCallbackView,
   },
+  {
+    path: '/oauth/naver/callback',
+    component: () => import('@/views/oauth/NaverCallbackView.vue'),
+  },
 ]
 
 const router = createRouter({

@@ -25,6 +25,14 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('refresh', res.data.refresh)
     },
 
+    setTokens(access, refresh) {
+      this.access = access
+      this.refresh = refresh
+
+      localStorage.setItem('access', access)
+      localStorage.setItem('refresh', refresh)
+    },
+
     logout() {
       this.access = null
       this.refresh = null
