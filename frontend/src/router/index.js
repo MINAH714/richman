@@ -2,27 +2,52 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
-import GoogleCallbackView
-from '@/views/oauth/GoogleCallbackView.vue'
+import GoogleCallbackView from '@/views/oauth/GoogleCallbackView.vue'
 
 const routes = [
+  // ── 인증 ───────────────────────────────────────────
   {
     path: '/login',
+    name: 'login',
     component: LoginView,
   },
   {
-    path: '/',
-    component: HomeView,
-    meta: { requiresAuth: true },
-  },
-  {
-  path: '/oauth/google/callback',
-  name: 'google-callback',
-  component: GoogleCallbackView,
+    path: '/oauth/google/callback',
+    name: 'google-callback',
+    component: GoogleCallbackView,
   },
   {
     path: '/oauth/naver/callback',
+    name: 'naver-callback',
     component: () => import('@/views/oauth/NaverCallbackView.vue'),
+  },
+
+  // ── 메인 ───────────────────────────────────────────
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView,
+    meta: { requiresAuth: true },
+  },
+
+  // ── 코인 대시보드 ────────────────────────────────────
+  {
+    path: '/crypto',
+    name: 'crypto-dashboard',
+    component: () => import('@/views/CryptoDashboardView.vue'),
+    // 비로그인도 시세 조회 가능 — requiresAuth 없음
+  },
+  {
+    path: '/crypto/:market',
+    name: 'CryptoDetail',
+    component: () => import('@/views/CoinDetailView.vue'),
+  },
+
+  // ── 404 ────────────────────────────────────────────
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/views/NotFoundView.vue'),
   },
 ]
 
@@ -35,7 +60,7 @@ router.beforeEach((to) => {
   const token = localStorage.getItem('access')
 
   if (to.meta.requiresAuth && !token) {
-    return '/login'
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 })
 

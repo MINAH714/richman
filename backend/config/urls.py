@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
+    path("api/crypto/", include("crypto.urls")),
 ]
