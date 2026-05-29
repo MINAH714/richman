@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import environ
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +30,7 @@ SECRET_KEY = 'django-insecure-in6jri&2egn%$4_t_lwax6tal0vi09kl65n)7h(xv5t98_p@)%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -151,3 +152,8 @@ AUTH_USER_MODEL = 'accounts.User'
 NAVER_CLIENT_ID = env('NAVER_CLIENT_ID')
 NAVER_CLIENT_SECRET = env('NAVER_CLIENT_SECRET')
 NAVER_REDIRECT_URI = env('NAVER_REDIRECT_URI')
+
+
+KAKAO_CLIENT_ID = os.environ.get('KAKAO_CLIENT_ID')
+KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')  # 없으면 빈 문자열
+KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI')

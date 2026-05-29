@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
 import GoogleCallbackView from '@/views/oauth/GoogleCallbackView.vue'
+import KakaoCallbackView from '@/views/oauth/KakaoCallbackView.vue'
 
 const routes = [
   // ── 인증 ───────────────────────────────────────────
@@ -21,6 +22,11 @@ const routes = [
     name: 'naver-callback',
     component: () => import('@/views/oauth/NaverCallbackView.vue'),
   },
+  {
+  path: '/oauth/kakao/callback',
+  name: 'KakaoCallback',
+  component: () => import('@/views/oauth/KakaoCallbackView.vue'),
+},
 
   // ── 메인 ───────────────────────────────────────────
   {

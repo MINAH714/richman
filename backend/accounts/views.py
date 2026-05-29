@@ -147,3 +147,63 @@ def naver_callback(request):
         f'http://localhost:5173/oauth/naver/callback'
         f'?access={access_token}&refresh={refresh_token}'
     )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def kakao_login(request):
+    code = request.data.get('code')
+    if not code:
+        return Response({'error': 'code가 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Step 1. Kakao access token 요청
+    token_response = requests.post(
+        'https://kauth.kakao.com/oauth/token',
+        data={
+            'grant_type': 'authorization_code',
+            'client_id': settings.KAKAO_CLIENT_ID,
+            'redirect_uri': settings.KAKAO_REDIRECT_URI,
+            'code': code,
+            # client_secret 설정한 경우에만 포함
+            **(
+                {'client_secret': settings.KAKAO_CLIENT_SECRET}
+                if settings.KAKAO_CLIENT_SECRET else {}
+            ),
+        },
+        headers={'Content-Type': 'application/x-www-form-urlencoded'},
+    )
+
+    token_data = token_response.json()
+    kakao_access_token = token_data.get('access_token')
+
+    if not kakao_access_token:
+        return Response({'error': 'Kakao access token 발급 실패', 'detail': token_data},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # Step 2. Kakao 사용자 정보 요청
+    user_response = requests.get(
+        'https://kapi.kakao.com/v2/user/me',
+        headers={'Authorization': f'Bearer {kakao_access_token}'},
+    )
+
+    user_info = user_response.json()
+    kakao_id = str(user_info.get('id'))
+    kakao_account = user_info.get('kakao_account', {})
+    email = kakao_account.get('email', f'{kakao_id}@kakao.com')  # 이메일 비동의 시 대체값
+    nickname = kakao_account.get('profile', {}).get('nickname', '')
+
+    # Step 3. User 생성 또는 조회 (Google과 동일 패턴)
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={
+            'username': f'kakao_{kakao_id}',
+            'nickname': nickname,        # Custom User 모델 필드에 맞게 조정
+        }
+    )
+
+    # Step 4. JWT 발급 (Google과 완전히 동일)
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
+    })

@@ -177,12 +177,17 @@ const googleLogin = () => {
 
 // ── Kakao OAuth ──────────────────────────────────────────
 const kakaoLogin = () => {
-  const params = new URLSearchParams({
-    client_id:     import.meta.env.VITE_KAKAO_REST_API_KEY,
-    redirect_uri:  import.meta.env.VITE_KAKAO_REDIRECT_URI,
-    response_type: 'code',
-  })
-  window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
+  const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID
+  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+  
+  const kakaoAuthUrl =
+    `https://kauth.kakao.com/oauth/authorize` +
+    `?client_id=${clientId}` +
+    `&redirect_uri=${redirectUri}` +
+    `&response_type=code` +
+    `&prompt=login` 
+  
+  window.location.href = kakaoAuthUrl
 }
 
 // ── Naver OAuth ──────────────────────────────────────────
