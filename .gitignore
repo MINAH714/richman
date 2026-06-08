@@ -11,7 +11,7 @@ staticfiles/
 frontend/node_modules/
 
 # Env
-.env
+.env*
 
 # Mac
 .DS_Store
