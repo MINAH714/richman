@@ -1,17 +1,36 @@
+# crypto/serializers.py
 from rest_framework import serializers
-from .models import Coin, Favorite
+from .models import WatchlistCoin, CoinBuzz, CoinSentiment
 
-class CoinSerializer(serializers.ModelSerializer):
+
+class WatchlistCoinSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Coin
-        fields = ["id", "market", "korean_name", "english_name"]
+        model = WatchlistCoin
+        fields = ['id', 'coin_symbol', 'added_at']
+        read_only_fields = ['id', 'added_at']
 
-class FavoriteSerializer(serializers.ModelSerializer):
-    coin = CoinSerializer(read_only=True)
-    coin_id = serializers.PrimaryKeyRelatedField(
-        queryset=Coin.objects.all(), source="coin", write_only=True
-    )
+    def validate_coin_symbol(self, value):
+        return value.upper()
 
+    def create(self, validated_data):
+        user = self.context['request'].user
+        symbol = validated_data['coin_symbol']
+        watchlist, created = WatchlistCoin.objects.get_or_create(
+            user=user,
+            coin_symbol=symbol,
+        )
+        if not created:
+            raise serializers.ValidationError("이미 즐겨찾기한 코인입니다.")
+        return watchlist
+
+
+class CoinBuzzSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Favorite
-        fields = ["id", "coin", "coin_id", "created_at"]
+        model = CoinBuzz
+        fields = ['id', 'coin_symbol', 'news_count', 'volume_24h', 'buzz_score', 'measured_at']
+
+
+class CoinSentimentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoinSentiment
+        fields = ['id', 'coin_symbol', 'positive_score', 'neutral_score', 'negative_score', 'analyzed_at']
