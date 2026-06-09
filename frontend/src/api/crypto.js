@@ -42,4 +42,7 @@ export const cryptoAPI = {
   getSentimentDetail(coinSymbol) {
     return axios.get(`/api/crypto/sentiment/${coinSymbol}/`)
   },
+  syncMarkets() {
+  return axios.post('/api/crypto/markets/sync/')
+  },
 }

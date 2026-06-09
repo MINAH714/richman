@@ -2,6 +2,9 @@
 <template>
   <div class="dashboard">
 
+    <!-- 토스트 알림 -->
+    <ToastNotification ref="toastRef" />
+
     <!-- ── 즐겨찾기 섹션 ───────────────────────────────────── -->
     <section v-if="authStore.isLoggedIn" class="favorites-section">
       <h2 class="section-title">⭐ 즐겨찾기</h2>
@@ -25,9 +28,7 @@
             >★</button>
           </div>
           <div class="fav-card-market">{{ item.market }}</div>
-          <div class="fav-card-price">
-            {{ formatPrice(item.trade_price) }}
-          </div>
+          <div class="fav-card-price">{{ formatPrice(item.trade_price) }}</div>
           <div class="fav-card-rate" :class="changeClass(item.change)">
             {{ formatRate(item.change_rate) }}
           </div>
@@ -37,14 +38,21 @@
 
     <hr v-if="authStore.isLoggedIn" class="divider" />
 
-    <!-- ── 검색 바 ────────────────────────────────────────── -->
-    <div class="search-bar">
+    <!-- ── 검색 바 + 동기화 버튼 ─────────────────────────── -->
+    <div class="toolbar">
       <input
         v-model="cryptoStore.searchQuery"
         type="text"
         placeholder="코인명, 심볼 검색..."
         class="search-input"
       />
+      <button
+        class="sync-btn"
+        :disabled="isSyncing"
+        @click="handleSync"
+      >
+        {{ isSyncing ? '동기화 중...' : '🔄 마켓 동기화' }}
+      </button>
     </div>
 
     <!-- ── 전체 코인 테이블 ───────────────────────────────── -->
@@ -104,14 +112,21 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useCryptoStore } from '@/stores/crypto'
 import { useAuthStore } from '@/stores/auth'
+import ToastNotification from '@/components/crypto/ToastNotification.vue'
 
 const cryptoStore = useCryptoStore()
 const authStore = useAuthStore()
+const toastRef = ref(null)
+const isSyncing = ref(false)
 
 onMounted(async () => {
+  // 변동률 알림 콜백 등록
+  cryptoStore.setAlertCallback((toast) => {
+    toastRef.value?.add(toast)
+  })
   await cryptoStore.startPolling()
   if (authStore.isLoggedIn) {
     await cryptoStore.loadWatchlist()
@@ -120,8 +135,24 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cryptoStore.stopPolling()
+  cryptoStore.setAlertCallback(null)
 })
 
+async function handleSync() {
+  isSyncing.value = true
+  try {
+    await cryptoStore.syncMarkets()
+    toastRef.value?.add({
+      type: 'up',
+      name: '동기화 완료',
+      message: `${cryptoStore.coins.length}개 코인 업데이트됨`,
+    })
+  } finally {
+    isSyncing.value = false
+  }
+}
+
+// ── 포맷 헬퍼 ────────────────────────────────────────────
 function formatPrice(price) {
   if (price == null) return '-'
   return price >= 100
@@ -173,9 +204,15 @@ function changeClass(change) {
 .fav-card-price { font-size: 1rem; font-weight: 600; margin-top: 0.5rem; }
 .fav-card-rate { font-size: 0.85rem; margin-top: 0.15rem; }
 
-.search-bar { margin-bottom: 1rem; }
+/* 툴바 */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
 .search-input {
-  width: 100%;
+  flex: 1;
   max-width: 360px;
   padding: 0.5rem 0.875rem;
   border: 1px solid #d1d5db;
@@ -184,6 +221,19 @@ function changeClass(change) {
   outline: none;
 }
 .search-input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px #6366f120; }
+
+.sync-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sync-btn:hover:not(:disabled) { background: #f3f4f6; }
+.sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .coin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .coin-table th {

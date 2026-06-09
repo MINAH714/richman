@@ -12,6 +12,13 @@ export const useCryptoStore = defineStore('crypto', () => {
   const isLoading = ref(false)
   const initialLoaded = ref(false)
 
+  // ── 변동률 알림 콜백 ──────────────────────────────────────
+  let alertCallback = null
+
+  function setAlertCallback(fn) {
+    alertCallback = fn
+  }
+
   // ── Computed ──────────────────────────────────────────────
   const watchlistSymbols = computed(() =>
     new Set(watchlist.value.map(w => w.coin_symbol))
@@ -31,22 +38,33 @@ export const useCryptoStore = defineStore('crypto', () => {
 
   // ── Actions ───────────────────────────────────────────────
   async function loadCoins() {
-    // 최초 로드일 때만 로딩 표시
     if (!initialLoaded.value) isLoading.value = true
 
     try {
       const { data } = await cryptoAPI.getCoins()
 
       if (!initialLoaded.value) {
-        // 최초: 통째로 넣기
         coins.value = data
         initialLoaded.value = true
       } else {
-        // 폴링: 시세 필드만 업데이트 → DOM 깜빡임 방지
         const map = new Map(data.map(c => [c.market, c]))
         coins.value.forEach(coin => {
           const fresh = map.get(coin.market)
           if (!fresh) return
+
+          // ── 변동률 알림 체크 (±5% 초과) ──────────────────
+          const oldRate = coin.change_rate ?? 0
+          const newRate = fresh.change_rate ?? 0
+          if (alertCallback && Math.abs(newRate) >= 0.05) {
+            if (Math.abs(newRate) > Math.abs(oldRate) + 0.001) {
+              alertCallback({
+                type: newRate > 0 ? 'up' : 'down',
+                name: coin.korean_name,
+                message: `${(newRate * 100).toFixed(2)}% ${newRate > 0 ? '급등' : '급락'}`,
+              })
+            }
+          }
+
           coin.trade_price          = fresh.trade_price
           coin.change               = fresh.change
           coin.change_rate          = fresh.change_rate
@@ -77,6 +95,13 @@ export const useCryptoStore = defineStore('crypto', () => {
     await loadWatchlist()
   }
 
+  async function syncMarkets() {
+    await cryptoAPI.syncMarkets()
+    // 캐시 초기화 후 새 데이터 강제 로드
+    initialLoaded.value = false
+    await loadCoins()
+  }
+
   // ── Upbit 실시간 폴링 (10초) ──────────────────────────────
   let pollingTimer = null
 
@@ -99,9 +124,11 @@ export const useCryptoStore = defineStore('crypto', () => {
     watchlistSymbols,
     filteredCoins,
     watchlistCoins,
+    setAlertCallback,
     loadCoins,
     loadWatchlist,
     toggleWatchlist,
+    syncMarkets,
     startPolling,
     stopPolling,
   }
