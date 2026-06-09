@@ -208,3 +208,19 @@ class CoinSentimentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(CoinSentimentSerializer(sentiment).data)
+
+
+from .services.upbit import clear_markets_cache
+
+class MarketCacheClearView(APIView):
+    """마켓 캐시 수동 초기화 (동기화 버튼)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        clear_markets_cache()
+        # 캐시 클리어 후 즉시 새 데이터 로드해서 재캐싱
+        markets = get_all_krw_markets()
+        return Response({
+            "message": "마켓 동기화 완료",
+            "count": len(markets)
+        })
