@@ -1,5 +1,5 @@
+// frontend/src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-
 import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
 import GoogleCallbackView from '@/views/oauth/GoogleCallbackView.vue'
@@ -23,10 +23,10 @@ const routes = [
     component: () => import('@/views/oauth/NaverCallbackView.vue'),
   },
   {
-  path: '/oauth/kakao/callback',
-  name: 'KakaoCallback',
-  component: () => import('@/views/oauth/KakaoCallbackView.vue'),
-},
+    path: '/oauth/kakao/callback',
+    name: 'KakaoCallback',
+    component: () => import('@/views/oauth/KakaoCallbackView.vue'),
+  },
 
   // ── 메인 ───────────────────────────────────────────
   {
@@ -41,12 +41,11 @@ const routes = [
     path: '/crypto',
     name: 'crypto-dashboard',
     component: () => import('@/views/CryptoDashboardView.vue'),
-    // 비로그인도 시세 조회 가능 — requiresAuth 없음
   },
   {
     path: '/crypto/:market',
-    name: 'CryptoDetail',
-    component: () => import('@/views/CoinDetailView.vue'),
+    name: 'crypto-detail',
+    component: () => import('@/views/CryptoDetailView.vue'),  // ← 여기만 변경
   },
 
   // ── 404 ────────────────────────────────────────────
@@ -64,7 +63,6 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const token = localStorage.getItem('access')
-
   if (to.meta.requiresAuth && !token) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
