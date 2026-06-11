@@ -6,7 +6,14 @@ import GoogleCallbackView from '@/views/oauth/GoogleCallbackView.vue'
 import KakaoCallbackView from '@/views/oauth/KakaoCallbackView.vue'
 
 const routes = [
-  // ── 인증 ───────────────────────────────────────────
+  // ── 메인 (로그인 불필요) ──────────────────────────────
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView,
+  },
+
+  // ── 인증 ─────────────────────────────────────────────
   {
     path: '/login',
     name: 'login',
@@ -25,18 +32,10 @@ const routes = [
   {
     path: '/oauth/kakao/callback',
     name: 'KakaoCallback',
-    component: () => import('@/views/oauth/KakaoCallbackView.vue'),
+    component: KakaoCallbackView,
   },
 
-  // ── 메인 ───────────────────────────────────────────
-  {
-    path: '/',
-    name: 'home',
-    component: HomeView,
-    meta: { requiresAuth: true },
-  },
-
-  // ── 코인 대시보드 ────────────────────────────────────
+  // ── 코인 대시보드 ──────────────────────────────────────
   {
     path: '/crypto',
     name: 'crypto-dashboard',
@@ -48,8 +47,7 @@ const routes = [
     component: () => import('@/views/CryptoBuzzView.vue'),
   },
 
-  // ── 감성 분석 (독립 페이지) ──────────────────────────
-  // ※ /crypto/:market 보다 반드시 위에 위치해야 함 (라우트 충돌 방지)
+  // ── 감성 분석 (/crypto/:market 보다 위에 위치) ─────────
   {
     path: '/crypto/sentiment/:market',
     name: 'crypto-sentiment',
@@ -57,15 +55,14 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
-  // ── 코인 상세 ────────────────────────────────────────
-  // ※ 동적 세그먼트(:market)는 정적 경로보다 아래에 위치
+  // ── 코인 상세 ──────────────────────────────────────────
   {
     path: '/crypto/:market',
     name: 'crypto-detail',
     component: () => import('@/views/CryptoDetailView.vue'),
   },
 
-  // ── 404 ────────────────────────────────────────────
+  // ── 404 ───────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
