@@ -1,4 +1,4 @@
-# crypto/views.py
+# backend/crypto/views.py
 import json
 from django.views import View
 from django.http import StreamingHttpResponse
@@ -11,6 +11,7 @@ from .models import WatchlistCoin, CoinBuzz, CoinSentiment
 from .serializers import WatchlistCoinSerializer, CoinBuzzSerializer, CoinSentimentSerializer
 from .services.upbit import get_all_krw_markets, get_ticker, get_candles_days, clear_markets_cache
 from .services.news import fetch_news_count, calculate_buzz_score
+from .services.sentiment import analyze_coin_sentiment
 
 
 class MarketListView(APIView):
@@ -369,3 +370,70 @@ class CoinSentimentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(CoinSentimentSerializer(sentiment).data)
+
+
+class CoinSentimentAnalyzeView(APIView):
+    """
+    POST /api/crypto/sentiment/analyze/
+    Body: { "coin_symbol": "KRW-BTC", "coin_name": "비트코인" }
+    뉴스 5건 수집 → GPT 분석 → DB upsert → 결과 반환
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        coin_symbol = str(request.data.get("coin_symbol", "")).upper().strip()
+        coin_name   = str(request.data.get("coin_name", "")).strip()
+
+        if not coin_symbol:
+            return Response(
+                {"error": "coin_symbol 필드가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = analyze_coin_sentiment(coin_symbol, coin_name)
+
+        # positive + neutral + negative 합계 = 1.0 최종 보정
+        total = round(
+            result["positive_score"] + result["neutral_score"] + result["negative_score"], 2
+        )
+        if total != 1.0:
+            result["neutral_score"] = round(result["neutral_score"] + (1.0 - total), 2)
+
+        obj, _ = CoinSentiment.objects.update_or_create(
+            coin_symbol=coin_symbol,
+            defaults={
+                "positive_score": result["positive_score"],
+                "neutral_score":  result["neutral_score"],
+                "negative_score": result["negative_score"],
+            },
+        )
+
+        return Response({
+            "coin_symbol":    coin_symbol,
+            "positive_score": result["positive_score"],
+            "neutral_score":  result["neutral_score"],
+            "negative_score": result["negative_score"],
+            "summary":        result["summary"],
+            "articles":       result["articles"],
+            "news_count":     result["news_count"],
+            "analyzed_at":    obj.analyzed_at,
+        })
+
+
+class CoinSentimentCachedView(APIView):
+    """
+    GET /api/crypto/sentiment/<coin_symbol>/
+    DB에 저장된 최신 감성 분석 결과 조회. 없으면 404.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, coin_symbol: str):
+        coin_symbol = coin_symbol.upper().strip()
+        try:
+            obj = CoinSentiment.objects.get(coin_symbol=coin_symbol)
+            return Response(CoinSentimentSerializer(obj).data)
+        except CoinSentiment.DoesNotExist:
+            return Response(
+                {"error": "아직 분석된 데이터가 없습니다. 분석을 먼저 실행하세요."},
+                status=status.HTTP_404_NOT_FOUND,
+            )

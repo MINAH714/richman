@@ -34,3 +34,28 @@ class CoinSentimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoinSentiment
         fields = ['id', 'coin_symbol', 'positive_score', 'neutral_score', 'negative_score', 'analyzed_at']
+
+
+class CoinSentimentSerializer(serializers.ModelSerializer):
+    # 합계 검증 필드
+    score_total = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = CoinSentiment
+        fields = [
+            "id",
+            "coin_symbol",
+            "positive_score",
+            "neutral_score",
+            "negative_score",
+            "score_total",   # 디버깅용 — 항상 1.0이어야 함
+            "analyzed_at",
+        ]
+ 
+    def get_score_total(self, obj) -> float:
+        return round(
+            float(obj.positive_score)
+            + float(obj.neutral_score)
+            + float(obj.negative_score),
+            2,
+        )

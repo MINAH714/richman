@@ -43,16 +43,27 @@ const routes = [
     component: () => import('@/views/CryptoDashboardView.vue'),
   },
   {
-  path: '/crypto/buzz',
-  name: 'crypto-buzz',
-  component: () => import('@/views/CryptoBuzzView.vue'),
+    path: '/crypto/buzz',
+    name: 'crypto-buzz',
+    component: () => import('@/views/CryptoBuzzView.vue'),
   },
+
+  // ── 감성 분석 (독립 페이지) ──────────────────────────
+  // ※ /crypto/:market 보다 반드시 위에 위치해야 함 (라우트 충돌 방지)
+  {
+    path: '/crypto/sentiment/:market',
+    name: 'crypto-sentiment',
+    component: () => import('@/views/CryptoSentimentView.vue'),
+    meta: { requiresAuth: true },
+  },
+
+  // ── 코인 상세 ────────────────────────────────────────
+  // ※ 동적 세그먼트(:market)는 정적 경로보다 아래에 위치
   {
     path: '/crypto/:market',
     name: 'crypto-detail',
-    component: () => import('@/views/CryptoDetailView.vue'),  // ← 여기만 변경
+    component: () => import('@/views/CryptoDetailView.vue'),
   },
-  
 
   // ── 404 ────────────────────────────────────────────
   {

@@ -27,25 +27,40 @@ export const cryptoAPI = {
     return axios.delete(`/api/crypto/watchlist/${coinSymbol}/`)
   },
 
-  // ── Social Buzz (Day 2) ──────────────────────────────────
+  // ── 마켓 캐시 동기화 ─────────────────────────────────────
+  syncMarkets() {
+    return axios.post('/api/crypto/markets/sync/')
+  },
+
+  // ── Social Buzz ──────────────────────────────────────────
   getBuzzList() {
     return axios.get('/api/crypto/buzz/')
   },
   getBuzzDetail(coinSymbol) {
     return axios.get(`/api/crypto/buzz/${coinSymbol}/`)
   },
+  getBuzzScore() {
+    return axios.get('/api/crypto/buzz/score/')
+  },
 
-  // ── 감성 분석 (Day 3) ────────────────────────────────────
+  // ── 감성 분석 ────────────────────────────────────────────
   getSentimentList() {
     return axios.get('/api/crypto/sentiment/')
   },
   getSentimentDetail(coinSymbol) {
     return axios.get(`/api/crypto/sentiment/${coinSymbol}/`)
   },
-  syncMarkets() {
-  return axios.post('/api/crypto/markets/sync/')
+
+  // ── 감성 분석 실행 (GPT) ─────────────────────────────────
+  analyzeSentiment(coinSymbol, coinName = '') {
+    return axios.post('/api/crypto/sentiment/analyze/', {
+      coin_symbol: coinSymbol,
+      coin_name:   coinName,
+    })
   },
-  getBuzzScore() {
-  return axios.get('/api/crypto/buzz/score/')
-},
+
+  // ── 감성 분석 캐시 조회 ──────────────────────────────────
+  getSentimentCached(coinSymbol) {
+    return axios.get(`/api/crypto/sentiment/${coinSymbol}/cached/`)
+  },
 }

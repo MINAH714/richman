@@ -165,3 +165,6 @@ KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI')
 # config/settings.py 맨 아래에 추가
 NAVER_NEWS_CLIENT_ID = env('NAVER_NEWS_CLIENT_ID')
 NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
+
+OPENAI_API_KEY  = os.environ.get("OPENAI_API_KEY")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.gms.ssafy.io/v1")
