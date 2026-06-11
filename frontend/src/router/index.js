@@ -43,10 +43,16 @@ const routes = [
     component: () => import('@/views/CryptoDashboardView.vue'),
   },
   {
+  path: '/crypto/buzz',
+  name: 'crypto-buzz',
+  component: () => import('@/views/CryptoBuzzView.vue'),
+  },
+  {
     path: '/crypto/:market',
     name: 'crypto-detail',
     component: () => import('@/views/CryptoDetailView.vue'),  // ← 여기만 변경
   },
+  
 
   // ── 404 ────────────────────────────────────────────
   {

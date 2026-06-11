@@ -1,4 +1,7 @@
 # crypto/views.py
+import json
+from django.views import View
+from django.http import StreamingHttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -6,7 +9,8 @@ from rest_framework import status
 
 from .models import WatchlistCoin, CoinBuzz, CoinSentiment
 from .serializers import WatchlistCoinSerializer, CoinBuzzSerializer, CoinSentimentSerializer
-from .services.upbit import get_all_krw_markets, get_ticker, get_candles_days
+from .services.upbit import get_all_krw_markets, get_ticker, get_candles_days, clear_markets_cache
+from .services.news import fetch_news_count, calculate_buzz_score
 
 
 class MarketListView(APIView):
@@ -14,18 +18,14 @@ class MarketListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        # Upbit에서 KRW 마켓 전체 목록 조회
         markets_info = get_all_krw_markets()
         if not markets_info:
             return Response([])
 
         market_codes = [m["market"] for m in markets_info]
-
-        # 실시간 시세 한 번에 조회
         tickers = get_ticker(market_codes)
         ticker_map = {t["market"]: t for t in tickers}
 
-        # 로그인 유저면 watchlist 조회
         watchlist_symbols = set()
         if request.user.is_authenticated:
             watchlist_symbols = set(
@@ -36,14 +36,14 @@ class MarketListView(APIView):
         result = []
         for m in markets_info:
             ticker = ticker_map.get(m["market"], {})
-            coin_symbol = m["market"].split("-")[1]   # KRW-BTC → BTC
+            coin_symbol = m["market"].split("-")[1]
             result.append({
                 "market": m["market"],
                 "coin_symbol": coin_symbol,
                 "korean_name": m["korean_name"],
                 "english_name": m["english_name"],
                 "trade_price": ticker.get("trade_price"),
-                "change": ticker.get("change"),               # RISE / FALL / EVEN
+                "change": ticker.get("change"),
                 "change_rate": ticker.get("change_rate"),
                 "change_price": ticker.get("signed_change_price"),
                 "acc_trade_price_24h": ticker.get("acc_trade_price_24h"),
@@ -78,14 +78,12 @@ class WatchlistCoinListView(APIView):
     def get(self, request):
         qs = WatchlistCoin.objects.filter(user=request.user).order_by("added_at")
 
-        # 실시간 시세 조회
         market_codes = [f"KRW-{w.coin_symbol}" for w in qs]
         ticker_map = {}
         if market_codes:
             tickers = get_ticker(market_codes)
             ticker_map = {t["market"]: t for t in tickers}
 
-        # 한글명 조회
         all_markets = {m["market"]: m for m in get_all_krw_markets()}
 
         result = []
@@ -110,7 +108,6 @@ class WatchlistCoinListView(APIView):
         return Response(result)
 
     def post(self, request):
-        """즐겨찾기 추가. body: { "coin_symbol": "BTC" }"""
         serializer = WatchlistCoinSerializer(
             data=request.data,
             context={"request": request},
@@ -140,8 +137,21 @@ class WatchlistCoinDeleteView(APIView):
             )
 
 
+class MarketCacheClearView(APIView):
+    """마켓 캐시 수동 초기화 (동기화 버튼)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        clear_markets_cache()
+        markets = get_all_krw_markets()
+        return Response({
+            "message": "마켓 동기화 완료",
+            "count": len(markets)
+        })
+
+
 class CoinBuzzListView(APIView):
-    """전체 코인 Buzz 점수 목록 — Day 2 구현"""
+    """전체 코인 Buzz 점수 목록"""
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -158,7 +168,7 @@ class CoinBuzzListView(APIView):
 
 
 class CoinBuzzDetailView(APIView):
-    """특정 코인 Buzz 상세 — Day 2 구현"""
+    """특정 코인 Buzz 상세"""
     permission_classes = [AllowAny]
 
     def get(self, request, coin_symbol):
@@ -175,8 +185,159 @@ class CoinBuzzDetailView(APIView):
         return Response(CoinBuzzSerializer(buzz).data)
 
 
+class BuzzScoreView(APIView):
+    """거래량 TOP 20 코인 Buzz 점수 계산 (일반 REST)"""
+    permission_classes = [AllowAny]
+    TOP_N = 20
+
+    def get(self, request):
+        all_markets = get_all_krw_markets()
+        market_codes = [m["market"] for m in all_markets]
+        tickers = get_ticker(market_codes)
+
+        top_tickers = sorted(
+            tickers,
+            key=lambda t: t.get("acc_trade_price_24h") or 0,
+            reverse=True
+        )[:self.TOP_N]
+
+        meta_map = {m["market"]: m for m in all_markets}
+        results = []
+
+        for ticker in top_tickers:
+            market = ticker["market"]
+            symbol = market.split("-")[1]
+            meta = meta_map.get(market, {})
+            korean_name = meta.get("korean_name", symbol)
+            volume_24h = ticker.get("acc_trade_price_24h") or 0
+
+            prev = (
+                CoinBuzz.objects.filter(coin_symbol=symbol)
+                .order_by("-measured_at")
+                .first()
+            )
+            prev_volume = prev.volume_24h if prev else 0
+
+            news_count = fetch_news_count(korean_name)
+            score_data = calculate_buzz_score(news_count, volume_24h, prev_volume)
+
+            buzz = CoinBuzz.objects.create(
+                coin_symbol=symbol,
+                news_count=news_count,
+                volume_24h=int(volume_24h),
+                buzz_score=score_data["buzz_score"],
+            )
+
+            results.append({
+                "coin_symbol": symbol,
+                "market": market,
+                "korean_name": korean_name,
+                "buzz_score": score_data["buzz_score"],
+                "news_score": score_data["news_score"],
+                "volume_bonus": score_data["volume_bonus"],
+                "is_volume_surge": score_data["is_volume_surge"],
+                "news_count": news_count,
+                "volume_24h": int(volume_24h),
+                "grade": self._grade(score_data["buzz_score"]),
+                "measured_at": buzz.measured_at,
+            })
+
+        results.sort(key=lambda x: x["buzz_score"], reverse=True)
+        return Response(results)
+
+    def _grade(self, score: float) -> str:
+        if score >= 70: return "🔥🔥🔥"
+        elif score >= 40: return "🔥🔥"
+        return "🔥"
+
+
+class BuzzScoreStreamView(View):
+    """거래량 TOP 20 코인 Buzz 점수 SSE 스트리밍"""
+    TOP_N = 20
+
+    def get(self, request):
+        response = StreamingHttpResponse(
+            self._stream(),
+            content_type="text/event-stream",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        response["Access-Control-Allow-Origin"] = "*"
+        return response
+
+    def _stream(self):
+        try:
+            all_markets = get_all_krw_markets()
+            market_codes = [m["market"] for m in all_markets]
+            tickers = get_ticker(market_codes)
+
+            top_tickers = sorted(
+                tickers,
+                key=lambda t: t.get("acc_trade_price_24h") or 0,
+                reverse=True
+            )[:self.TOP_N]
+
+            meta_map = {m["market"]: m for m in all_markets}
+            total = len(top_tickers)
+
+            yield f"data: {json.dumps({'type': 'total', 'total': total})}\n\n"
+
+            for idx, ticker in enumerate(top_tickers):
+                market = ticker["market"]
+                symbol = market.split("-")[1]
+                meta = meta_map.get(market, {})
+                korean_name = meta.get("korean_name", symbol)
+                volume_24h = ticker.get("acc_trade_price_24h") or 0
+
+                yield f"data: {json.dumps({'type': 'progress', 'current': idx + 1, 'total': total, 'coin': korean_name})}\n\n"
+
+                prev = (
+                    CoinBuzz.objects.filter(coin_symbol=symbol)
+                    .order_by("-measured_at")
+                    .first()
+                )
+                prev_volume = prev.volume_24h if prev else 0
+
+                news_count = fetch_news_count(korean_name)
+                score_data = calculate_buzz_score(news_count, volume_24h, prev_volume)
+
+                buzz = CoinBuzz.objects.create(
+                    coin_symbol=symbol,
+                    news_count=news_count,
+                    volume_24h=int(volume_24h),
+                    buzz_score=score_data["buzz_score"],
+                )
+
+                result = {
+                    "type": "result",
+                    "coin_symbol": symbol,
+                    "market": market,
+                    "korean_name": korean_name,
+                    "buzz_score": score_data["buzz_score"],
+                    "news_score": score_data["news_score"],
+                    "volume_bonus": score_data["volume_bonus"],
+                    "is_volume_surge": score_data["is_volume_surge"],
+                    "news_count": news_count,
+                    "volume_24h": int(volume_24h),
+                    "grade": self._grade(score_data["buzz_score"]),
+                    "measured_at": str(buzz.measured_at),
+                }
+
+                yield f"data: {json.dumps(result)}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done', 'total': total})}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    def _grade(self, score: float) -> str:
+        if score >= 70: return "🔥🔥🔥"
+        elif score >= 40: return "🔥🔥"
+        return "🔥"
+
+
 class CoinSentimentListView(APIView):
-    """전체 코인 감성 분석 목록 — Day 3 구현"""
+    """전체 코인 감성 분석 목록"""
     permission_classes = [AllowAny]
 
     def get(self, request):
@@ -193,7 +354,7 @@ class CoinSentimentListView(APIView):
 
 
 class CoinSentimentDetailView(APIView):
-    """특정 코인 최신 감성 분석 — Day 3 구현"""
+    """특정 코인 최신 감성 분석"""
     permission_classes = [AllowAny]
 
     def get(self, request, coin_symbol):
@@ -208,19 +369,3 @@ class CoinSentimentDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(CoinSentimentSerializer(sentiment).data)
-
-
-from .services.upbit import clear_markets_cache
-
-class MarketCacheClearView(APIView):
-    """마켓 캐시 수동 초기화 (동기화 버튼)"""
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        clear_markets_cache()
-        # 캐시 클리어 후 즉시 새 데이터 로드해서 재캐싱
-        markets = get_all_krw_markets()
-        return Response({
-            "message": "마켓 동기화 완료",
-            "count": len(markets)
-        })

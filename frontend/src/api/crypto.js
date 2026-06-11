@@ -45,4 +45,7 @@ export const cryptoAPI = {
   syncMarkets() {
   return axios.post('/api/crypto/markets/sync/')
   },
+  getBuzzScore() {
+  return axios.get('/api/crypto/buzz/score/')
+},
 }
