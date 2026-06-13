@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'accounts',
     'consumption',
     'crypto',
+    'stocks',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -62,6 +62,22 @@ const routes = [
     component: () => import('@/views/CryptoDetailView.vue'),
   },
 
+  // ── 주식 관심 종목 (로그인 필요) ────────────────────────────
+  {
+    path: '/stocks/watchlist',
+    name: 'stock-watchlist',
+    component: () => import('@/views/StockWatchlistView.vue'),
+    meta: { requiresAuth: true },
+  },
+
+  // ── 주식 차트 (기능 2에서 내용 채울 예정, 일단 라우트만 등록) ───
+  {
+    path: '/stocks/chart/:symbol',
+    name: 'stock-chart',
+    component: () => import('@/views/StockChartView.vue'),
+    meta: { requiresAuth: true },
+  },
+
   // ── 404 ───────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',

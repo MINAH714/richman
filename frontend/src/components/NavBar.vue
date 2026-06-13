@@ -21,10 +21,10 @@
           </router-link>
         </li>
         <li>
-          <span class="nav-item nav-disabled" title="준비 중">
+          <router-link to="/stocks/watchlist" class="nav-item">
             📈 주식
-            <span class="nav-badge">준비중</span>
-          </span>
+          </router-link>
+            
         </li>
         <li>
           <span class="nav-item nav-disabled" title="준비 중">
