@@ -135,3 +135,99 @@ def stock_price(request, symbol):
             status=status.HTTP_404_NOT_FOUND
         )
     return Response({'symbol': symbol, 'current_price': price})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stock_chart(request, symbol):
+    """
+    GET /api/stocks/chart/<symbol>/
+    
+    yfinance로 주가 히스토리를 가져와서
+    이동평균선(MA)과 볼린저 밴드를 계산해서 내려주는 API
+    
+    쿼리 파라미터:
+    - period: 조회 기간 (기본값 3mo) → 1mo, 3mo, 6mo, 1y
+    
+    예: GET /api/stocks/chart/AAPL/?period=3mo
+    """
+    # 쿼리 파라미터에서 기간을 받음, 없으면 3개월(3mo) 기본값
+    period = request.query_params.get('period', '3mo')
+
+    try:
+        ticker = yf.Ticker(symbol)
+        # yfinance로 주가 히스토리 조회
+        # interval='1d' → 일봉 기준
+        df = ticker.history(period=period, interval='1d')
+
+        if df.empty:
+            return Response(
+                {'error': f'{symbol} 데이터를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # ── 이동평균선(MA) 계산 ─────────────────────────
+        # rolling(n).mean() = 최근 n일의 평균을 구하는 함수
+        # 예: MA5 = 최근 5일 종가의 평균
+        df['MA5']  = df['Close'].rolling(window=5).mean()
+        df['MA20'] = df['Close'].rolling(window=20).mean()
+        df['MA60'] = df['Close'].rolling(window=60).mean()
+
+        # ── 볼린저 밴드(Bollinger Band) 계산 ────────────
+        # 볼린저 밴드 = 이동평균 ± (표준편차 × 2)
+        # 상단 밴드: 주가가 여기 위로 올라가면 "과매수" 신호
+        # 하단 밴드: 주가가 여기 아래로 내려가면 "과매도" 신호
+        df['BB_mid']   = df['Close'].rolling(window=20).mean()
+        df['BB_std']   = df['Close'].rolling(window=20).std()
+        df['BB_upper'] = df['BB_mid'] + (df['BB_std'] * 2)
+        df['BB_lower'] = df['BB_mid'] - (df['BB_std'] * 2)
+
+        # ── 날짜 인덱스를 문자열로 변환 ─────────────────
+        # JSON으로 내려보낼 때 datetime 타입은 직렬화가 안 되므로 문자열로 변환
+        df.index = df.index.strftime('%Y-%m-%d')
+
+        # ── NaN(계산 불가 값)을 None으로 변환 ───────────
+        # rolling 계산 초반부는 데이터가 부족해 NaN이 생김
+        # 예: MA60은 처음 60일 이전 데이터는 NaN
+        # JSON에서 NaN은 오류이므로 None(null)으로 변환
+        def to_val(v):
+            import math
+            return None if (v is None or (isinstance(v, float) and math.isnan(v))) else round(float(v), 4)
+
+        # ── 응답 데이터 조립 ─────────────────────────────
+        result = {
+            'symbol': symbol,
+            'period': period,
+            'dates':  df.index.tolist(),  # x축 날짜 목록
+            'candle': [                   # 캔들스틱용 OHLC 데이터
+                {
+                    'x': date,
+                    'y': [
+                        to_val(row['Open']),   # 시가
+                        to_val(row['High']),   # 고가
+                        to_val(row['Low']),    # 저가
+                        to_val(row['Close']),  # 종가
+                    ]
+                }
+                for date, row in df.iterrows()
+            ],
+            'ma': {                       # 이동평균선 데이터
+                'ma5':  [to_val(v) for v in df['MA5']],
+                'ma20': [to_val(v) for v in df['MA20']],
+                'ma60': [to_val(v) for v in df['MA60']],
+            },
+            'bollinger': {                # 볼린저 밴드 데이터
+                'upper': [to_val(v) for v in df['BB_upper']],
+                'mid':   [to_val(v) for v in df['BB_mid']],
+                'lower': [to_val(v) for v in df['BB_lower']],
+            },
+            'volume': [to_val(v) for v in df['Volume']],  # 거래량
+        }
+
+        return Response(result)
+
+    except Exception as e:
+        return Response(
+            {'error': f'차트 데이터 조회 중 오류가 발생했습니다: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

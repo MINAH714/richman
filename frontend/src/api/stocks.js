@@ -29,3 +29,9 @@ export const upsertPortfolio = (watchlistId, payload) =>
 // symbol 예시: 'AAPL', '005930.KS'
 export const getStockPrice = (symbol) =>
   axios.get(`/api/stocks/price/${symbol}/`)
+
+
+// 차트 데이터 조회 (캔들 + 이동평균선 + 볼린저 밴드)
+// period 예시: '1mo', '3mo', '6mo', '1y'
+export const getStockChart = (symbol, period = '3mo') =>
+  axios.get(`/api/stocks/chart/${symbol}/`, { params: { period } })
