@@ -142,9 +142,14 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 👈 이 줄이 정확히 있는지 확인!
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # 인증된 유저만 접근 허용
     ),
 }
 
@@ -168,3 +173,14 @@ NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
 
 OPENAI_API_KEY  = os.environ.get("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.gms.ssafy.io/v1")
+
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    # 토큰 유효기간을 5분에서 1일(24시간)로 대폭 연장합니다.
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+}

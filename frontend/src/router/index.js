@@ -62,6 +62,14 @@ const routes = [
     component: () => import('@/views/CryptoDetailView.vue'),
   },
 
+  // ── 소비 메인 ──────────────────────────────────────────
+  {
+    path: '/consumption',
+    name: 'consumption',
+    component: () => import('@/views/ConsumptionView.vue'),
+    meta: { requiresAuth: true },
+  },
+
   // ── 404 ───────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',

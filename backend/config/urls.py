@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
     path("api/crypto/", include("crypto.urls")),
+    path('api/consumption/', include('consumption.urls')),
 ]
