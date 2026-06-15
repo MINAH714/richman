@@ -24,5 +24,6 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
     path("api/crypto/", include("crypto.urls")),
-    path("api/stocks/", include("stocks.urls"))
+    path("api/stocks/", include("stocks.urls")),
+    path("api/chat/", include("chatbot.urls")),
 ]

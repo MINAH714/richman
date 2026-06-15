@@ -2,7 +2,6 @@
 <template>
   <nav class="navbar">
     <div class="nav-inner">
-
       <!-- 로고 -->
       <router-link to="/" class="nav-logo">
         💰 Richman
@@ -24,7 +23,6 @@
           <router-link to="/stocks/watchlist" class="nav-item">
             📈 주식
           </router-link>
-            
         </li>
         <li>
           <span class="nav-item nav-disabled" title="준비 중">
@@ -33,10 +31,9 @@
           </span>
         </li>
         <li>
-          <span class="nav-item nav-disabled" title="준비 중">
+          <router-link to="/chat" class="nav-item">
             🤖 챗봇
-            <span class="nav-badge">준비중</span>
-          </span>
+          </router-link>
         </li>
       </ul>
 
@@ -50,7 +47,6 @@
           <router-link to="/login" class="nav-btn nav-btn--primary">로그인</router-link>
         </template>
       </div>
-
     </div>
   </nav>
 </template>
@@ -58,10 +54,8 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
-
 const authStore = useAuthStore()
 const router = useRouter()
-
 function logout() {
   authStore.logout()
   router.push('/')
@@ -86,8 +80,6 @@ function logout() {
   align-items: center;
   gap: 32px;
 }
-
-/* 로고 */
 .nav-logo {
   font-size: 1.1rem;
   font-weight: 700;
@@ -96,8 +88,6 @@ function logout() {
   flex-shrink: 0;
 }
 .nav-logo:hover { color: #3b6fd4; }
-
-/* 메뉴 */
 .nav-menu {
   display: flex;
   align-items: center;
@@ -127,8 +117,6 @@ function logout() {
   color: #3b6fd4;
   font-weight: 700;
 }
-
-/* 비활성 메뉴 */
 .nav-disabled {
   color: #94a3b8;
   cursor: not-allowed;
@@ -143,18 +131,13 @@ function logout() {
   font-weight: 600;
   letter-spacing: 0.03em;
 }
-
-/* 인증 */
 .nav-auth {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
-.nav-username {
-  font-size: 0.8rem;
-  color: #64748b;
-}
+.nav-username { font-size: 0.8rem; color: #64748b; }
 .nav-btn {
   padding: 6px 14px;
   border-radius: 6px;
@@ -166,15 +149,8 @@ function logout() {
   transition: all 0.15s;
   border: none;
 }
-.nav-btn--primary {
-  background: #3b6fd4;
-  color: white;
-}
+.nav-btn--primary { background: #3b6fd4; color: white; }
 .nav-btn--primary:hover { background: #2d5ab8; }
-.nav-btn--outline {
-  background: white;
-  color: #64748b;
-  border: 1px solid #d0e2f5;
-}
+.nav-btn--outline { background: white; color: #64748b; border: 1px solid #d0e2f5; }
 .nav-btn--outline:hover { background: #f1f5f9; }
 </style>
