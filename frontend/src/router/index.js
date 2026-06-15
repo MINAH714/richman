@@ -84,6 +84,13 @@ const routes = [
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
   },
+
+  // ── 챗봇 ───────────────────────────────────────────────
+  {
+  path: '/chat',
+  name: 'chat',
+  component: () => import('@/views/ChatPageView.vue'),
+},
 ]
 
 const router = createRouter({
