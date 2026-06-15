@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'consumption',
     'crypto',
     'stocks',
+    'chatbot',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -168,5 +169,5 @@ KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI')
 NAVER_NEWS_CLIENT_ID = env('NAVER_NEWS_CLIENT_ID')
 NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
 
-OPENAI_API_KEY  = os.environ.get("OPENAI_API_KEY")
-OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.gms.ssafy.io/v1")
+OPENAI_API_KEY = env('OPENAI_API_KEY')
+OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://api.gms.ssafy.io/v1')
