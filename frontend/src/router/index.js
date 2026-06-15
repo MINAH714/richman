@@ -69,6 +69,13 @@ const routes = [
     component: () => import('@/views/ConsumptionView.vue'),
     meta: { requiresAuth: true },
   },
+   // ── 도넛차트 ──────────────────────────────────────────
+  {
+    path: '/consumption/insight',
+    name: 'consumption-insight',
+    component: () => import('@/views/InsightView.vue'),
+    meta: { requiresAuth: true },
+},
 
   // ── 404 ───────────────────────────────────────────────
   {

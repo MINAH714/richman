@@ -53,6 +53,7 @@ const dailyTotals = ref({})   // { '2025-06-03': 15000, ... }
 
 const fetchCalendar = async () => {
   const { data } = await getMonthlyCalendar(year.value, month.value)
+  console.log(data)
   dailyTotals.value = data.daily_totals
 }
 
@@ -71,7 +72,8 @@ const daysInMonth = computed(() =>
 const dateStr  = (day) =>
   `${year.value}-${String(month.value).padStart(2,'0')}-${String(day).padStart(2,'0')}`
 
-const totalOf  = (day) => dailyTotals.value[dateStr(day)] || 0
+// dailyTotals.value가 아직 로딩 중이거나 값이 없어도 에러를 내지 않고 0을 반환합니다.
+const totalOf  = (day) => dailyTotals.value?.[dateStr(day)] || 0
 
 
 const isToday  = (day) =>

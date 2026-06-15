@@ -2,11 +2,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate
 from .models import Transaction, Store
 from .serializers import TransactionSerializer
 import datetime
+from collections import defaultdict
+
 
 class CalendarMonthlyView(APIView):
     """GET /api/consumption/calendar/?year=2025&month=6"""
@@ -87,3 +89,107 @@ class TransactionCategoryUpdateView(APIView):
         tx.save()
 
         return Response(TransactionSerializer(tx).data)
+    
+class InsightView(APIView):
+    """GET /api/consumption/insight/?year=2025&month=6"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        year  = int(request.query_params.get('year',  datetime.date.today().year))
+        month = int(request.query_params.get('month', datetime.date.today().month))
+
+        expense_qs = Transaction.objects.filter(
+            user=request.user,
+            transacted_at__year=year,
+            transacted_at__month=month,
+            transaction_type='expense',
+        )
+
+        # 1) 카테고리별 합산
+        category_data = (
+            expense_qs
+            .values('category')
+            .annotate(total=Sum('amount'), count=Count('id'))
+            .order_by('-total')
+        )
+
+        total_expense = expense_qs.aggregate(Sum('amount'))['amount__sum'] or 0
+
+        categories = []
+        for row in category_data:
+            cat   = row['category']
+            amt   = row['total']
+            ratio = round(amt / total_expense * 100, 1) if total_expense else 0
+            categories.append({
+                'category':         cat,
+                'category_display': dict(Transaction._meta.get_field('category').choices).get(cat, cat),
+                'amount':           amt,
+                'count':            row['count'],
+                'ratio':            ratio,
+            })
+
+        # 2) 고정 지출
+        fixed_qs = Transaction.objects.filter(
+            user=request.user,
+            is_fixed=True,
+            transacted_at__year=year,
+            transacted_at__month=month
+        )
+
+        # 2. 이름(description)과 카테고리가 같으면 금액(amount)을 더해서 묶어버립니다! (★핵심)
+        fixed_list = list(
+            fixed_qs.values('description', 'category')
+            .annotate(amount=Sum('amount'))  # 중복된 SKT 금액들을 하나로 더해줌
+            .order_by('-amount')             # 금액 큰 순서대로 정렬
+        )
+
+# 3. 전체 고정 지출 총합 계산
+        fixed_total = fixed_qs.aggregate(Sum('amount'))['amount__sum'] or 0
+
+        return Response({
+            'year':          year,
+            'month':         month,
+            'total_expense': total_expense,
+            'categories':    categories,
+            'fixed': {
+                'list':  fixed_list,
+                'total': fixed_total,
+            },
+        })
+
+class InsightTrendView(APIView):
+    def get(self, request):
+        # 1. 프론트엔드가 보낸 쿼리 스트링(?year=2025&month=5)을 읽어옵니다.
+        # 만약 안 넘어오면 기본값으로 오늘 날짜를 씁니다.
+        try:
+            target_year = int(request.query_params.get('year', datetime.date.today().year))
+            target_month = int(request.query_params.get('month', datetime.date.today().month))
+            # 계산의 편의를 위해 해당 월의 1일로 가상 데이트 객체 생성
+            base_date = datetime.date(target_year, target_month, 1)
+        except (ValueError, TypeError):
+            base_date = datetime.date.today()
+
+        result = []
+        
+        # 2. 고정된 today 대신, 프론트가 요청한 base_date를 기준으로 3개월 역산!
+        for i in range(2, -1, -1):  # 2달 전 -> 1달 전 -> 기준월
+            month = base_date.month - i
+            year  = base_date.year
+            while month <= 0:
+                month += 12
+                year  -= 1
+                
+            total = Transaction.objects.filter(
+                user=request.user,
+                transacted_at__year=year,
+                transacted_at__month=month,
+                transaction_type='expense',
+            ).aggregate(Sum('amount'))['amount__sum'] or 0
+            
+            result.append({
+                'year':  year,
+                'month': month,
+                'total': total,
+            })
+            
+        return Response({'trend': result})

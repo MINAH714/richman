@@ -7,7 +7,8 @@
         <button @click="emit('close')">✕</button>
       </div>
 
-      <p class="modal__total">총 {{ total.toLocaleString() }}원</p>
+      <!-- 🛠️ 방어 조치: total이 비어있을 수 있으므로 기본값 (total || 0) 세팅 -->
+      <p class="modal__total">총 {{ (total || 0).toLocaleString() }}원</p>
 
       <ul class="modal__list">
         <li v-for="tx in transactions" :key="tx.id" class="modal__item">
@@ -17,7 +18,9 @@
             <CategoryBadge :category="tx.category" :label="tx.category_display" />
           </div>
           <div class="modal__item-right">
-            <span class="modal__amount">{{ tx.amount.toLocaleString() }}원</span>
+            <!-- 🛠️ 방어 조치: tx.amount가 유효할 때만 포맷팅하도록 옵셔널 체이닝 및 기본값 지정 -->
+            <span class="modal__amount">{{ (tx.amount || 0).toLocaleString() }}원</span>
+            
             <!-- 이체 건: 지출로 전환 버튼 -->
             <button
               v-if="tx.transaction_type === 'transfer'"
@@ -70,13 +73,20 @@ const CATEGORIES = [
 ]
 
 onMounted(async () => {
-  const { data } = await getDayDetail(props.date)
-  transactions.value = data.transactions
-  total.value        = data.total
+  try {
+    const { data } = await getDayDetail(props.date)
+    // 백엔드에서 데이터가 안전하게 내려오지 않았을 때를 위한 fallback 처리
+    transactions.value = data?.transactions || []
+    total.value        = data?.total || 0
+  } catch (error) {
+    console.error("상세 내역 로드 실패:", error)
+  }
 })
 
-const formatTime = (iso) =>
-  new Date(iso).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })
+const formatTime = (iso) => {
+  if (!iso) return ''
+  return new Date(iso).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })
+}
 
 const openConvert = (tx) => {
   convertTarget.value = tx
@@ -85,7 +95,7 @@ const openConvert = (tx) => {
 
 const confirmConvert = async () => {
   await updateCategory(convertTarget.value.id, newCategory.value)
-  // 로컬 상태 즉시 반영
+  
   const tx = transactions.value.find(t => t.id === convertTarget.value.id)
   if (tx) {
     tx.transaction_type = 'expense'

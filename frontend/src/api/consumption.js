@@ -1,17 +1,14 @@
 // src/api/consumption.js
 import axios from 'axios'
 
-const BASE = 'http://localhost:5173/api/consumption'
+// 🚨 도메인 없이 '/api/consumption'만 적혀 있어야 vite.config.js의 프록시가 작동합니다!
+const BASE = '/api/consumption'
 
-// ❌ 기존 코드
-// const authHeader = () => ({
-//   headers: { Authorization: `Bearer ${localStorage.getItem('access')}` }
-// })
-
-// 🛠️ 임시 수정 코드: ssafy 계정의 access 토큰을 직접 문자열로 박아버립니다.
 const authHeader = () => ({
   headers: { 
-    Authorization: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzgxNTEzMzE0LCJpYXQiOjE3ODE0MjY5MTQsImp0aSI6IjRjYzQ5YzFmMjQ0NDQzYTI4ZmJkOGVlOWNjNzI1OWI0IiwidXNlcl9pZCI6IjEifQ.WfEzbO_AxDxX5bD9EZP7MmN5Fy2jNyCDiSGFIKXVKOU' 
+    // ⚠️ 'Bearer ' 뒤에 방금 터미널에서 얻은 아주 긴 토큰을 정확히 붙여넣으세요.
+    // (끝에 따옴표 탈출 기호가 없는지, 싱글 쿼테이션 ' ' 사이에 잘 들어갔는지 확인!)
+    Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzgxNTk1MTYxLCJpYXQiOjE3ODE1MDg3NjEsImp0aSI6IjdjMDZhYWJjNzYyZTQ1NjNhZjU1NmM1MzZlZTI4ODEyIiwidXNlcl9pZCI6IjEifQ.toPBzy9mdYNUjQrdDbb-kIrcVZRlOCMiycyDb7r8KAI' 
   }
 })
 
@@ -23,3 +20,9 @@ export const getDayDetail = (dateStr) =>
 
 export const updateCategory = (txId, category) =>
   axios.patch(`${BASE}/transactions/${txId}/category/`, { category }, authHeader())
+
+export const getInsight = (year, month) =>
+  axios.get(`${BASE}/insight/`, { params: { year, month }, ...authHeader() })
+
+export const getInsightTrend = (year, month) =>
+  axios.get(`${BASE}/insight/trend/`, { params: { year, month }, ...authHeader() })
