@@ -18,3 +18,8 @@ class SignupSerializer(serializers.ModelSerializer):
             nickname=validated_data.get('nickname', '')
         )
         return user
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'nickname', 'email']

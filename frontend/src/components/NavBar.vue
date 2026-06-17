@@ -1,4 +1,4 @@
-<!-- frontend/src/components/NavBar.vue -->
+<!-- src/components/NavBar.vue -->
 <template>
   <nav class="navbar">
     <div class="nav-inner">
@@ -7,7 +7,6 @@
         💰 Richman
       </router-link>
 
-      <!-- 메뉴 -->
       <ul class="nav-menu">
         <li>
           <router-link to="/crypto" class="nav-item">
@@ -40,8 +39,25 @@
       <!-- 로그인/유저 -->
       <div class="nav-auth">
         <template v-if="authStore.isLoggedIn">
-          <span class="nav-username">{{ authStore.user?.username }}</span>
-          <button class="nav-btn nav-btn--outline" @click="logout">로그아웃</button>
+          <div class="profile-menu" ref="profileMenuRef">
+            <button class="profile-trigger" @click="toggleDropdown">
+              <span class="profile-icon">{{ initial }}</span>
+              <span class="nav-username">{{ authStore.user?.nickname || authStore.user?.username }}</span>
+              <span class="dropdown-arrow" :class="{ open: dropdownOpen }">▾</span>
+            </button>
+
+            <transition name="dropdown-fade">
+              <div v-if="dropdownOpen" class="profile-dropdown">
+                <router-link to="/mypage" class="dropdown-item" @click="dropdownOpen = false">
+                  👤 마이페이지
+                </router-link>
+                <div class="dropdown-divider" />
+                <button class="dropdown-item dropdown-item--danger" @click="logout">
+                  🚪 로그아웃
+                </button>
+              </div>
+            </transition>
+          </div>
         </template>
         <template v-else>
           <router-link to="/login" class="nav-btn nav-btn--primary">로그인</router-link>
@@ -52,14 +68,26 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const router = useRouter()
 function logout() {
+  dropdownOpen.value = false
   authStore.logout()
   router.push('/')
 }
+
+// 바깥 클릭 시 드롭다운 닫기
+function handleOutsideClick(e) {
+  if (profileMenuRef.value && !profileMenuRef.value.contains(e.target)) {
+    dropdownOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', handleOutsideClick))
+onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 </script>
 
 <style scoped>

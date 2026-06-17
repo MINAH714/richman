@@ -10,4 +10,5 @@ urlpatterns = [
     path('google/login/', google_login),
     path('naver/callback/', naver_callback),
     path('kakao/login/', views.kakao_login, name='kakao_login'),
+    path('me/', views.MyProfileView.as_view()),
 ]
