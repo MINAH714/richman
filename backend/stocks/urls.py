@@ -15,5 +15,11 @@ urlpatterns = [
     # 현재가 조회
     path('price/<str:symbol>/', views.stock_price, name='stock-price'),
 
-    path('chart/<str:symbol>/', views.stock_chart, name='stock-chart')
+    path('chart/<str:symbol>/', views.stock_chart, name='stock-chart'),
+
+    path('search/', views.stock_search, name='stock-search'),
+
+    path('predict/<str:symbol>/', views.predict_stock, name='predict-stock'),       
+    path('predictions/', views.prediction_history, name='prediction-history'),      
+    path('predictions/<int:pk>/', views.prediction_delete, name='prediction-delete'), 
 ]

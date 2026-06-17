@@ -4,6 +4,13 @@
     <div class="page-header">
       <h1>📈 관심 종목</h1>
       <p class="subtitle">즐겨찾기한 종목과 포트폴리오를 한눈에 확인하세요.</p>
+      <router-link to="/stocks/prediction" class="link-prediction">
+        🤖 AI 예측 히스토리 보기 →
+      </router-link>
+    </div>
+
+    <div class="search-section">
+      <StockSearchBar/>
     </div>
 
     <!-- 종목 추가 입력 폼 -->
@@ -55,6 +62,7 @@ import { useRouter } from 'vue-router'
 import { useWatchlistStore } from '@/stores/watchlist'
 import WatchlistCard from '@/components/stocks/WatchlistCard.vue'
 import PortfolioModal from '@/components/stocks/PortfolioModal.vue'
+import StockSearchBar from '@/components/stocks/StockSearchBar.vue'
 
 const store = useWatchlistStore()
 const router = useRouter()
@@ -150,4 +158,15 @@ onMounted(() => {
   gap: 16px;
   margin-top: 24px;
 }
+.search-section {
+  margin-bottom: 24px;
+}
+.link-prediction {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #2563eb;
+  text-decoration: none;
+}
+.link-prediction:hover { text-decoration: underline; }
 </style>

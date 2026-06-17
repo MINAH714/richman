@@ -44,3 +44,24 @@ class WatchlistSerializer(serializers.ModelSerializer):
         # 확인용으로 포함해 둠
         fields = ['id', 'symbol', 'name', 'market', 'added_at', 'portfolio']
         read_only_fields = ['added_at']
+
+
+
+from .models import Watchlist, Portfolio, PredictionHistory   # PredictionHistory 추가
+
+class PredictionHistorySerializer(serializers.ModelSerializer):
+    # 모델의 @property인 error_rate를 JSON 응답에 포함
+    error_rate = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PredictionHistory
+        fields = [
+            'id', 'symbol', 'name',
+            'predicted_date', 'predicted_price',
+            'actual_price', 'error_rate',
+            'ai_comment', 'created_at',
+        ]
+        read_only_fields = ['created_at']
+
+    def get_error_rate(self, obj):
+        return obj.error_rate

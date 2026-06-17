@@ -35,3 +35,22 @@ export const getStockPrice = (symbol) =>
 // period 예시: '1mo', '3mo', '6mo', '1y'
 export const getStockChart = (symbol, period = '3mo') =>
   axios.get(`/api/stocks/chart/${symbol}/`, { params: { period } })
+
+// 종목 검색 자동완성
+// query 예시: 'apple', '삼성', 'AAPL'
+export const searchStocks = (query) => 
+  axios.get('/api/stocks/search/', {params: {q: query}})
+
+
+// 특정 종목 AI 예측 실행
+// symbol: 티커, name: 종목명
+export const predictStock = (symbol, name) =>
+  axios.post(`/api/stocks/predict/${symbol}/`, { name })
+
+// 내 예측 히스토리 전체 조회
+export const getPredictionHistory = () =>
+  axios.get('/api/stocks/predictions/')
+
+// 예측 히스토리 단건 삭제
+export const deletePrediction = (id) =>
+  axios.delete(`/api/stocks/predictions/${id}/`)
