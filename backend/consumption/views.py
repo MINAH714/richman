@@ -158,38 +158,30 @@ class InsightView(APIView):
         })
 
 class InsightTrendView(APIView):
-    def get(self, request):
-        # 1. 프론트엔드가 보낸 쿼리 스트링(?year=2025&month=5)을 읽어옵니다.
-        # 만약 안 넘어오면 기본값으로 오늘 날짜를 씁니다.
-        try:
-            target_year = int(request.query_params.get('year', datetime.date.today().year))
-            target_month = int(request.query_params.get('month', datetime.date.today().month))
-            # 계산의 편의를 위해 해당 월의 1일로 가상 데이트 객체 생성
-            base_date = datetime.date(target_year, target_month, 1)
-        except (ValueError, TypeError):
-            base_date = datetime.date.today()
+    """GET /api/consumption/insight/trend/?year=2025&month=6
+       선택한 월 기준 최근 3개월 추이
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        base_year  = int(request.query_params.get('year',  datetime.date.today().year))
+        base_month = int(request.query_params.get('month', datetime.date.today().month))
         result = []
-        
-        # 2. 고정된 today 대신, 프론트가 요청한 base_date를 기준으로 3개월 역산!
-        for i in range(2, -1, -1):  # 2달 전 -> 1달 전 -> 기준월
-            month = base_date.month - i
-            year  = base_date.year
+
+        for i in range(2, -1, -1):
+            month = base_month - i
+            year  = base_year
             while month <= 0:
                 month += 12
                 year  -= 1
-                
+
             total = Transaction.objects.filter(
                 user=request.user,
                 transacted_at__year=year,
                 transacted_at__month=month,
                 transaction_type='expense',
             ).aggregate(Sum('amount'))['amount__sum'] or 0
-            
-            result.append({
-                'year':  year,
-                'month': month,
-                'total': total,
-            })
-            
+
+            result.append({'year': year, 'month': month, 'total': total})
+
         return Response({'trend': result})

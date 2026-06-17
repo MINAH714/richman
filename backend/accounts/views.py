@@ -6,6 +6,7 @@ from rest_framework import status
 from .serializers import SignupSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
+from .serializers import UserProfileSerializer
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -45,6 +46,14 @@ class MeView(APIView):
             'username': user.username,
             'nickname': user.nickname,
         })
+    
+
+    
+class MyProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserProfileSerializer(request.user).data)
 
 
 @api_view(['POST'])

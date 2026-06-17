@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     access: localStorage.getItem('access') || null,
     refresh: localStorage.getItem('refresh') || null,
+    user: null,
   }),
 
   getters: {
@@ -23,6 +24,12 @@ export const useAuthStore = defineStore('auth', {
 
       localStorage.setItem('access', res.data.access)
       localStorage.setItem('refresh', res.data.refresh)
+      await this.fetchProfile()
+    },
+
+    async fetchProfile() {
+      const res = await api.get('/api/accounts/me/')
+      this.user = res.data
     },
 
     setTokens(access, refresh) {
@@ -42,5 +49,7 @@ export const useAuthStore = defineStore('auth', {
 
       window.location.href = '/login'
     },
+
+    
   },
 })

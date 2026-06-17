@@ -1,7 +1,6 @@
 <template>
   <div class="trend-wrap">
     <h3 class="section-title">최근 3개월 지출 추이</h3>
-
     <div class="trend-bars">
       <div v-for="item in trend" :key="`${item.year}-${item.month}`" class="trend-bar-group">
         <span class="trend-amount">{{ (item.total / 10000).toFixed(0) }}만원</span>
@@ -10,11 +9,11 @@
             class="trend-bar-fill"
             :style="{
               height: barHeight(item.total) + '%',
-              background: isCurrentMonth(item) ? '#6c63ff' : '#c4b5fd'
+              background: isSelected(item) ? '#6c63ff' : '#c4b5fd'
             }"
           />
         </div>
-        <span class="trend-label" :style="{ fontWeight: isCurrentMonth(item) ? 700 : 400 }">
+        <span class="trend-label" :style="{ fontWeight: isSelected(item) ? 700 : 400 }">
           {{ item.month }}월
         </span>
       </div>
@@ -26,16 +25,15 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  trend: { type: Array, default: () => [] },
+  trend:        { type: Array,  default: () => [] },
+  selectedYear: { type: Number, default: null },
+  selectedMonth:{ type: Number, default: null },
 })
 
-const maxTotal = computed(() => Math.max(...props.trend.map(t => t.total), 1))
-
+const maxTotal  = computed(() => Math.max(...props.trend.map(t => t.total), 1))
 const barHeight = (total) => Math.round(total / maxTotal.value * 100)
-
-const today = new Date()
-const isCurrentMonth = (item) =>
-  item.year === today.getFullYear() && item.month === today.getMonth() + 1
+const isSelected = (item) =>
+  item.year === props.selectedYear && item.month === props.selectedMonth
 </script>
 
 <style scoped>

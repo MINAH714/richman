@@ -1,17 +1,20 @@
 // src/api/consumption.js
 import axios from 'axios'
 
-// 🚨 도메인 없이 '/api/consumption'만 적혀 있어야 vite.config.js의 프록시가 작동합니다!
 const BASE = '/api/consumption'
 
-const authHeader = () => ({
-  headers: { 
-    // ⚠️ 'Bearer ' 뒤에 방금 터미널에서 얻은 아주 긴 토큰을 정확히 붙여넣으세요.
-    // (끝에 따옴표 탈출 기호가 없는지, 싱글 쿼테이션 ' ' 사이에 잘 들어갔는지 확인!)
-    Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzgxNTk1MTYxLCJpYXQiOjE3ODE1MDg3NjEsImp0aSI6IjdjMDZhYWJjNzYyZTQ1NjNhZjU1NmM1MzZlZTI4ODEyIiwidXNlcl9pZCI6IjEifQ.toPBzy9mdYNUjQrdDbb-kIrcVZRlOCMiycyDb7r8KAI' 
+const authHeader = () => {
+  // 🚨 [수정 완료] auth.js 금고 이름에 맞춰 'token' 대신 'access'를 꺼내옵니다!
+  const token = localStorage.getItem('access')
+  
+  return {
+    headers: { 
+      Authorization: token ? `Bearer ${token}` : '' 
+    }
   }
-})
+}
 
+// 아래 getMonthlyCalendar, getInsight, getInsightTrend 등 기존 코드는 그대로 유지!
 export const getMonthlyCalendar = (year, month) =>
   axios.get(`${BASE}/calendar/`, { params: { year, month }, ...authHeader() })
 
