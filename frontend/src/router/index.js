@@ -78,6 +78,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
+  {
+    path: '/stocks/prediction',
+    name: 'stock-prediction',
+    component: () => import('@/views/StockPredictionView.vue'),
+    meta: { requiresAuth: true},
+  },
+
   // ── 404 ───────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',
