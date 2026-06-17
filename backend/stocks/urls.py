@@ -15,5 +15,7 @@ urlpatterns = [
     # 현재가 조회
     path('price/<str:symbol>/', views.stock_price, name='stock-price'),
 
-    path('chart/<str:symbol>/', views.stock_chart, name='stock-chart')
+    path('chart/<str:symbol>/', views.stock_chart, name='stock-chart'),
+
+    path('search/', views.stock_search, name='stock-search'),
 ]

@@ -35,3 +35,8 @@ export const getStockPrice = (symbol) =>
 // period 예시: '1mo', '3mo', '6mo', '1y'
 export const getStockChart = (symbol, period = '3mo') =>
   axios.get(`/api/stocks/chart/${symbol}/`, { params: { period } })
+
+// 종목 검색 자동완성
+// query 예시: 'apple', '삼성', 'AAPL'
+export const searchStocks = (query) => 
+  axios.get('/api/stocks/search/', {params: {q: query}})

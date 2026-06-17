@@ -6,6 +6,10 @@
       <p class="subtitle">즐겨찾기한 종목과 포트폴리오를 한눈에 확인하세요.</p>
     </div>
 
+    <div class="search-section">
+      <StockSearchBar/>
+    </div>
+
     <!-- 종목 추가 입력 폼 -->
     <div class="add-form">
       <input v-model="newSymbol" placeholder="티커 입력 (예: AAPL, 005930.KS)" @keyup.enter="handleAdd" />
@@ -55,6 +59,7 @@ import { useRouter } from 'vue-router'
 import { useWatchlistStore } from '@/stores/watchlist'
 import WatchlistCard from '@/components/stocks/WatchlistCard.vue'
 import PortfolioModal from '@/components/stocks/PortfolioModal.vue'
+import StockSearchBar from '@/components/stocks/StockSearchBar.vue'
 
 const store = useWatchlistStore()
 const router = useRouter()
@@ -149,5 +154,8 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
   margin-top: 24px;
+}
+.search-section {
+  margin-bottom: 24px;
 }
 </style>

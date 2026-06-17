@@ -231,3 +231,53 @@ def stock_chart(request, symbol):
             {'error': f'차트 데이터 조회 중 오류가 발생했습니다: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stock_search(request):
+    """
+    GET /api/stocks/search/?q=검색어
+    
+    yfinance로 종목을 검색해서 자동완성 목록을 반환하는 API
+    
+    예: GET /api/stocks/search/?q=apple
+        GET /api/stocks/search/?q=삼성
+    """
+    query = request.query_params.get('q', '').strip()
+
+    # 2글자 미만이면 검색하지 않음 (너무 많은 결과 방지)
+    if len(query) < 2:
+        return Response([])
+
+    try:
+        # yfinance의 Search 클래스로 종목 검색
+        # max_results: 최대 몇 개까지 반환할지
+        search = yf.Search(query, max_results=8)
+        quotes = search.quotes  # 검색 결과 목록
+
+        if not quotes:
+            return Response([])
+
+        result = []
+        for q in quotes:
+            # quoteType이 없는 항목은 건너뜀
+            if not q.get('quoteType'):
+                continue
+
+            result.append({
+                'symbol':     q.get('symbol', ''),           # 티커 (예: AAPL)
+                'name':       q.get('longname')              # 정식 종목명
+                              or q.get('shortname', ''),     # 없으면 약식 종목명
+                'market':     q.get('exchDisp', ''),         # 거래소 (예: NASDAQ)
+                'type':       q.get('quoteType', ''),        # 종류 (EQUITY, ETF 등)
+                'exchange':   q.get('exchange', ''),         # 거래소 코드 (예: NMS)
+            })
+
+        return Response(result)
+
+    except Exception as e:
+        return Response(
+            {'error': f'검색 중 오류가 발생했습니다: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
