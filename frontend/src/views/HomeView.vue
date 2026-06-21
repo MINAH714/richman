@@ -1,27 +1,49 @@
+<!-- frontend/src/views/HomeView.vue -->
 <template>
   <div class="home">
 
     <!-- ── HERO ──────────────────────────────────────────── -->
-    <section class="hero">
-      <div class="hero-inner">
-        <p class="hero-eyebrow">SMART FINANCIAL PLATFORM</p>
-        <h1 class="hero-title">소비 · 주식 · 크립토<br>한 곳에서</h1>
-        <p class="hero-desc">
-          AI가 내 금융 데이터를 분석하고<br>
-          실질적인 인사이트를 제공합니다
-        </p>
-        <div class="hero-actions">
-          <router-link to="/crypto" class="btn btn-primary">
-            🪙 크립토 보러가기
-          </router-link>
-          <router-link to="/login" class="btn btn-outline" v-if="!authStore.isLoggedIn">
-            로그인
-          </router-link>
+    <section class="hero-section">
+      <div class="section-inner hero-grid">
+
+        <div class="hero-text">
+          <p class="eyebrow">SMART FINANCIAL PLATFORM</p>
+          <h1 class="hero-title">흩어진 자산을<br>하나의 시야로</h1>
+          <p class="hero-desc">
+            소비 · 주식 · 크립토 데이터를 통합 분석하고<br>
+            AI가 맞춤 인사이트를 제공합니다
+          </p>
+          <div class="hero-btns">
+            <div class="btn btn-disabled">
+              <i class="ti ti-receipt-2" aria-hidden="true"></i> 소비 분석
+            </div>
+            <router-link to="/stocks/watchlist" class="btn btn-outline">
+              <i class="ti ti-chart-candle" aria-hidden="true"></i> 주식
+            </router-link>
+            <router-link to="/crypto" class="btn btn-primary">
+              <i class="ti ti-coin" aria-hidden="true"></i> 크립토
+            </router-link>
+          </div>
         </div>
+
+        <div class="hero-graph-card">
+          <p class="graph-label">실시간 시세 추이 (BTC)</p>
+          <p class="graph-value">
+            {{ formatPrice(btcTicker?.trade_price) }}
+            <span class="graph-rate" :class="changeClass(btcTicker?.change)">
+              {{ formatRate(btcTicker?.change_rate) }}
+            </span>
+          </p>
+          <svg viewBox="0 0 280 90" class="graph-svg" role="img" aria-label="비트코인 30일 가격 추이">
+            <polyline :points="chartPoints" fill="none" stroke="#378ADD" stroke-width="2.5" />
+            <polygon :points="chartAreaPoints" fill="#E6F1FB" opacity="0.6" />
+          </svg>
+        </div>
+
       </div>
     </section>
 
-    <!-- ── 실시간 코인 미리보기 ───────────────────────────── -->
+    <!-- ── 실시간 시세 4칸 ──────────────────────────────── -->
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
@@ -31,7 +53,7 @@
         </div>
 
         <div v-if="isLoading" class="preview-grid">
-          <div class="coin-card skeleton" v-for="n in 5" :key="n" />
+          <div class="metric-card skeleton" v-for="n in 4" :key="n" />
         </div>
 
         <div v-else class="preview-grid">
@@ -39,116 +61,52 @@
             v-for="coin in topCoins"
             :key="coin.market"
             :to="`/crypto/${coin.market}`"
-            class="coin-card"
+            class="metric-card"
           >
-            <div class="coin-card-top">
-              <span class="coin-symbol">{{ coin.coin_symbol }}</span>
-              <span class="coin-change" :class="changeClass(coin.change)">
-                {{ formatRate(coin.change_rate) }}
-              </span>
-            </div>
-            <p class="coin-name">{{ coin.korean_name }}</p>
-            <p class="coin-price">{{ formatPrice(coin.trade_price) }}</p>
-            <p class="coin-volume">거래대금 {{ formatVolume(coin.acc_trade_price_24h) }}</p>
+            <p class="metric-label">{{ coin.coin_symbol }}</p>
+            <p class="metric-value">{{ formatPrice(coin.trade_price) }}</p>
+            <p class="metric-rate" :class="changeClass(coin.change)">
+              {{ formatRate(coin.change_rate) }}
+            </p>
           </router-link>
+
+          <div class="metric-card metric-card--muted">
+            <p class="metric-label">이번달 소비</p>
+            <p class="metric-value">준비 중</p>
+            <p class="metric-rate flat">소비 분석 출시 예정</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ── 기능 카드 3개 ──────────────────────────────────── -->
+    <!-- ── 3버튼 기능 카드 ──────────────────────────────── -->
     <section class="feature-section">
       <div class="section-inner">
-        <h2 class="section-title center">주요 기능</h2>
+        <h2 class="section-title center">기능 바로가기</h2>
 
         <div class="feature-grid">
 
-          <!-- 크립토 — 완성 -->
+          <div class="feature-card feature-card--soon">
+            <i class="ti ti-receipt-2 feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">소비 분석</p>
+            <p class="feature-status feature-status--soon">준비 중</p>
+            <span class="feature-btn feature-btn--disabled">둘러보기</span>
+          </div>
+
+          <div class="feature-card feature-card--soon">
+            <i class="ti ti-chart-candle feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">주식</p>
+            <p class="feature-status feature-status--soon">준비 중</p>
+            <router-link to="/stocks/watchlist" class="feature-btn">둘러보기</router-link>
+          </div>
+
           <router-link to="/crypto" class="feature-card feature-card--active">
-            <div class="feature-icon">🪙</div>
-            <h3 class="feature-name">크립토</h3>
-            <p class="feature-desc">
-              실시간 시세 · Buzz 지표<br>
-              뉴스 감성 분석
-            </p>
-            <div class="feature-status feature-status--live">사용 가능</div>
-            <ul class="feature-list">
-              <li>✅ 전체 코인 실시간 시세</li>
-              <li>✅ 즐겨찾기</li>
-              <li>✅ Social Buzz 점수</li>
-              <li>✅ GPT 뉴스 감성 분석</li>
-            </ul>
+            <i class="ti ti-coin feature-icon feature-icon--active" aria-hidden="true"></i>
+            <p class="feature-name">크립토</p>
+            <p class="feature-status feature-status--live">사용 가능</p>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
-          <!-- 주식 — 준비중 -->
-          <div class="feature-card feature-card--soon">
-            <div class="feature-icon">📈</div>
-            <h3 class="feature-name">주식</h3>
-            <p class="feature-desc">
-              기술 지표 시각화<br>
-              AI 예측 · 포트폴리오
-            </p>
-            <div class="feature-status feature-status--soon">준비 중</div>
-            <ul class="feature-list">
-              <li>⬜ 종목 검색 & 자동완성</li>
-              <li>⬜ MA · 볼린저밴드 차트</li>
-              <li>⬜ 관심 종목 포트폴리오</li>
-              <li>⬜ AI 예측 히스토리</li>
-            </ul>
-          </div>
-
-          <!-- 소비 — 준비중 -->
-          <div class="feature-card feature-card--soon">
-            <div class="feature-icon">💳</div>
-            <h3 class="feature-name">소비 분석</h3>
-            <p class="feature-desc">
-              소비 캘린더 · 정산<br>
-              AI 소비 리포트
-            </p>
-            <div class="feature-status feature-status--soon">준비 중</div>
-            <ul class="feature-list">
-              <li>⬜ 월별 소비 캘린더</li>
-              <li>⬜ 카테고리별 분석</li>
-              <li>⬜ 스마트 정산 시스템</li>
-              <li>⬜ AI 소비 리포트</li>
-            </ul>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ── AI 챗봇 소개 ────────────────────────────────────── -->
-    <section class="chatbot-section">
-      <div class="section-inner chatbot-inner">
-        <div class="chatbot-text">
-          <p class="hero-eyebrow">AI INTEGRATION</p>
-          <h2 class="section-title">AI 통합 챗봇</h2>
-          <p class="chatbot-desc">
-            소비 · 주식 · 크립토 실제 데이터를 기반으로<br>
-            개인화된 금융 인사이트를 제공합니다
-          </p>
-          <div class="chatbot-examples">
-            <div class="chat-bubble">
-              💬 "비트코인 왜 올랐어?"
-            </div>
-            <div class="chat-bubble chat-bubble--reply">
-              🤖 오늘 ETF 승인 기대감으로 3.2% 상승, Buzz Score 72점으로 높은 편입니다.
-            </div>
-            <div class="chat-bubble">
-              💬 "나 이번 달 재정 상태 어때?"
-            </div>
-            <div class="chat-bubble chat-bubble--reply">
-              🤖 총 소비 124만원, 주식 +3.2%, BTC -1.4%. 여유 자금 약 38만원입니다.
-            </div>
-          </div>
-        </div>
-        <div class="chatbot-status">
-          <div class="status-card">
-            <span class="status-icon">🤖</span>
-            <p class="status-label">AI 챗봇</p>
-            <p class="status-text">전 파트 통합 후<br>출시 예정</p>
-            <div class="feature-status feature-status--soon" style="margin-top: 12px;">준비 중</div>
-          </div>
         </div>
       </div>
     </section>
@@ -158,20 +116,41 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import { cryptoAPI } from '@/api/crypto'
-
-const authStore = useAuthStore()
 
 const allCoins  = ref([])
 const isLoading = ref(true)
+const candles   = ref([])
 
-// 거래대금 TOP 5
 const topCoins = computed(() =>
   [...allCoins.value]
     .sort((a, b) => (b.acc_trade_price_24h ?? 0) - (a.acc_trade_price_24h ?? 0))
-    .slice(0, 5)
+    .slice(0, 3)
 )
+
+const btcTicker = computed(() =>
+  allCoins.value.find(c => c.market === 'KRW-BTC')
+)
+
+// ── 캔들 데이터 → SVG 라인 좌표 변환 ──────────────────────
+const chartPoints = computed(() => {
+  if (!candles.value.length) return '0,70 280,70'
+  const prices = candles.value.map(c => c.trade_price).reverse()
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min || 1
+  const stepX = 280 / (prices.length - 1)
+
+  return prices
+    .map((p, i) => {
+      const x = (i * stepX).toFixed(1)
+      const y = (90 - ((p - min) / range) * 80 - 5).toFixed(1)
+      return `${x},${y}`
+    })
+    .join(' ')
+})
+
+const chartAreaPoints = computed(() => `0,90 ${chartPoints.value} 280,90`)
 
 async function loadCoins() {
   try {
@@ -184,15 +163,23 @@ async function loadCoins() {
   }
 }
 
-// 10초 폴링
+async function loadBtcCandles() {
+  try {
+    const { data } = await cryptoAPI.getCoinDetail('KRW-BTC')
+    candles.value = data.candles ?? []
+  } catch (e) {
+    console.error('캔들 로드 실패:', e)
+  }
+}
+
 let timer = null
 onMounted(() => {
   loadCoins()
+  loadBtcCandles()
   timer = setInterval(loadCoins, 10_000)
 })
 onUnmounted(() => clearInterval(timer))
 
-// ── 포맷 헬퍼 ────────────────────────────────────────────
 function formatPrice(price) {
   if (price == null) return '-'
   return price >= 100
@@ -202,12 +189,6 @@ function formatPrice(price) {
 function formatRate(rate) {
   if (rate == null) return '-'
   return (rate >= 0 ? '+' : '') + (rate * 100).toFixed(2) + '%'
-}
-function formatVolume(vol) {
-  if (vol == null) return '-'
-  if (vol >= 1_000_000_000_000) return (vol / 1_000_000_000_000).toFixed(1) + '조'
-  if (vol >= 100_000_000)       return (vol / 100_000_000).toFixed(1) + '억'
-  return vol.toLocaleString('ko-KR')
 }
 function changeClass(change) {
   if (change === 'RISE') return 'up'
@@ -219,12 +200,11 @@ function changeClass(change) {
 <style scoped>
 .home {
   min-height: 100vh;
-  background: #f0f6ff;
-  font-family: 'IBM Plex Mono', monospace;
-  color: #0f172a;
+  background: var(--color-bg-page);
+  font-family: var(--font-main);
+  color: var(--color-text-primary);
 }
 
-/* ── 공통 레이아웃 ── */
 .section-inner {
   max-width: 1100px;
   margin: 0 auto;
@@ -234,113 +214,132 @@ function changeClass(change) {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 .section-title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 600;
   margin: 0;
-  color: #0f172a;
+  letter-spacing: -0.01em;
 }
 .section-title.center { text-align: center; margin-bottom: 28px; }
 .section-link {
   margin-left: auto;
   font-size: 0.8rem;
-  color: #3b6fd4;
+  color: var(--color-primary);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 500;
 }
 .section-link:hover { text-decoration: underline; }
 
 /* ── HERO ── */
-.hero {
-  padding: 72px 24px 56px;
-  text-align: center;
+.hero-section { padding: 48px 24px 56px; }
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 2.5rem;
+  align-items: center;
 }
-.hero-inner { max-width: 600px; margin: 0 auto; }
-.hero-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #3b6fd4;
-  margin: 0 0 16px;
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  margin: 0 0 14px;
 }
 .hero-title {
-  font-size: 2.2rem;
-  font-weight: 800;
-  line-height: 1.25;
+  font-size: 2.3rem;
+  font-weight: 600;
+  line-height: 1.35;
   margin: 0 0 16px;
-  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 .hero-desc {
   font-size: 0.95rem;
-  color: #64748b;
+  color: var(--color-text-secondary);
   line-height: 1.7;
-  margin: 0 0 28px;
+  margin: 0 0 26px;
+  font-weight: 400;
 }
-.hero-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
+.hero-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
 .btn {
-  padding: 11px 24px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  font-family: 'IBM Plex Mono', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  font-weight: 500;
+  font-family: var(--font-main);
   text-decoration: none;
   cursor: pointer;
   border: none;
   transition: all 0.15s;
 }
-.btn-primary { background: #3b6fd4; color: white; }
-.btn-primary:hover { background: #2d5ab8; }
-.btn-outline { background: white; color: #3b6fd4; border: 1px solid #3b6fd4; }
-.btn-outline:hover { background: #f0f6ff; }
-
-/* ── LIVE 배지 ── */
-.live-dot {
-  padding: 2px 8px;
-  background: #dcfce7;
-  color: #16a34a;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  animation: pulse 2s infinite;
+.btn i { font-size: 16px; }
+.btn-primary { background: var(--color-primary); color: white; }
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-outline {
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border: 0.5px solid var(--color-border-strong);
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+.btn-outline:hover { background: var(--color-bg-secondary); }
+.btn-disabled {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
 }
 
-/* ── 실시간 미리보기 ── */
-.preview-section {
-  padding: 0 0 48px;
+/* 히어로 그래프 카드 */
+.hero-graph-card {
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
 }
+.graph-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 6px; }
+.graph-value {
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+}
+.graph-rate { font-size: 0.82rem; font-weight: 500; margin-left: 6px; }
+.graph-svg { width: 100%; height: 90px; display: block; }
+
+/* ── 실시간 시세 ── */
+.preview-section { padding: 0 0 56px; }
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
-.coin-card {
-  background: white;
-  border: 1px solid #e2ecf9;
-  border-radius: 10px;
-  padding: 16px;
+.live-dot {
+  padding: 3px 9px;
+  background: #f0fdf4;
+  color: #16a34a;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.metric-card {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.15s, border-color 0.15s;
   display: block;
+  transition: background 0.15s;
 }
-.coin-card:hover {
-  box-shadow: 0 4px 16px rgba(59,111,212,0.1);
-  border-color: #bdd0f5;
-}
-.coin-card.skeleton {
-  height: 110px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2ecf9 50%, #f1f5f9 75%);
+.metric-card:hover { background: var(--color-primary-light); }
+.metric-card--muted { cursor: default; }
+.metric-card--muted:hover { background: var(--color-bg-secondary); }
+.metric-card.skeleton {
+  height: 84px;
+  background: linear-gradient(90deg, #eee 25%, #e0e0e0 50%, #eee 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
 }
@@ -348,139 +347,68 @@ function changeClass(change) {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-.coin-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.coin-symbol { font-size: 0.9rem; font-weight: 700; }
-.coin-change { font-size: 0.8rem; font-weight: 700; }
-.coin-name   { font-size: 0.75rem; color: #94a3b8; margin: 0 0 8px; }
-.coin-price  { font-size: 0.95rem; font-weight: 700; margin: 0 0 4px; }
-.coin-volume { font-size: 0.7rem; color: #94a3b8; margin: 0; }
+.metric-label { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0 0 6px; }
+.metric-value { font-size: 1.05rem; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
+.metric-rate { font-size: 0.78rem; font-weight: 500; margin: 0; }
 
-.up   { color: #ef4444; }
-.down { color: #3b82f6; }
-.flat { color: #6b7280; }
+.up   { color: var(--color-up); }
+.down { color: var(--color-down); }
+.flat { color: var(--color-text-tertiary); }
 
-/* ── 기능 카드 ── */
-.feature-section { padding: 48px 0; }
+/* ── 기능 카드 3개 ── */
+.feature-section { padding: 0 0 72px; }
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 14px;
 }
 .feature-card {
-  background: white;
-  border: 1px solid #e2ecf9;
-  border-radius: 12px;
-  padding: 28px 24px;
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  text-align: center;
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.15s;
   display: block;
+  transition: border-color 0.15s;
 }
 .feature-card--active {
-  border-color: #bdd0f5;
-  box-shadow: 0 2px 12px rgba(59,111,212,0.08);
+  border: 2px solid var(--color-primary);
 }
-.feature-card--active:hover {
-  box-shadow: 0 6px 24px rgba(59,111,212,0.15);
-}
-.feature-card--soon {
-  opacity: 0.65;
-  cursor: default;
-}
-.feature-icon { font-size: 2rem; margin-bottom: 12px; }
-.feature-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-.feature-desc {
-  font-size: 0.8rem;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0 0 14px;
-}
-.feature-status {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-.feature-status--live {
-  background: #dcfce7;
-  color: #16a34a;
-}
-.feature-status--soon {
-  background: #f1f5f9;
-  color: #94a3b8;
-}
-.feature-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.feature-list li {
-  font-size: 0.78rem;
-  color: #64748b;
-}
+.feature-card--active:hover { border-color: var(--color-primary-hover); }
+.feature-card--soon { cursor: default; }
 
-/* ── 챗봇 섹션 ── */
-.chatbot-section {
-  padding: 48px 0 72px;
-  background: white;
-  border-top: 1px solid #e2ecf9;
+.feature-icon {
+  font-size: 28px;
+  color: var(--color-text-tertiary);
+  margin-bottom: 14px;
+  display: block;
 }
-.chatbot-inner {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 48px;
-  align-items: start;
-}
-.chatbot-desc {
-  font-size: 0.9rem;
-  color: #64748b;
-  line-height: 1.7;
-  margin: 8px 0 20px;
-}
-.chatbot-examples {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.chat-bubble {
+.feature-icon--active { color: var(--color-primary); }
+
+.feature-name { font-size: 1rem; font-weight: 600; margin: 0 0 6px; }
+.feature-status { font-size: 0.78rem; margin: 0 0 16px; }
+.feature-status--live { color: var(--color-primary); font-weight: 500; }
+.feature-status--soon { color: var(--color-text-tertiary); }
+
+.feature-btn {
   display: inline-block;
-  padding: 10px 14px;
-  border-radius: 10px;
   font-size: 0.8rem;
-  line-height: 1.5;
-  background: #f0f6ff;
-  border: 1px solid #e2ecf9;
-  max-width: 420px;
+  padding: 7px 16px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--color-border-strong);
+  color: var(--color-text-primary);
+  text-decoration: none;
 }
-.chat-bubble--reply {
-  background: #f8faff;
-  border-color: #bdd0f5;
-  color: #3b6fd4;
-  align-self: flex-start;
+.feature-btn--primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  font-weight: 500;
 }
-.status-card {
-  background: #f8faff;
-  border: 1px solid #e2ecf9;
-  border-radius: 12px;
-  padding: 28px 24px;
-  text-align: center;
-  width: 180px;
+.feature-btn--disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
 }
-.status-icon  { font-size: 2rem; display: block; margin-bottom: 10px; }
-.status-label { font-size: 1rem; font-weight: 700; margin: 0 0 8px; }
-.status-text  { font-size: 0.78rem; color: #94a3b8; margin: 0; line-height: 1.5; }
 </style>
