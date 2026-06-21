@@ -98,7 +98,6 @@ class Command(BaseCommand):
                     transaction_type='expense',
                     category='food',
                     is_fixed=False,
-                    is_settle_target=True,
                     transacted_at=datetime(year, month, day, 19, random.randint(0, 59)),
                 ))
 

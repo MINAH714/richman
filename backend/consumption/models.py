@@ -64,6 +64,13 @@ class Transaction(models.Model):
 
     created_at    = models.DateTimeField(auto_now_add=True)
 
+    # 정산 관련 (기존 필드 보강)
+    is_settle_target  = models.BooleanField(default=False)   # 정산 대상 여부
+    is_settled         = models.BooleanField(default=False)  # 정산 완료 여부
+    settle_people_count = models.PositiveIntegerField(null=True, blank=True)  # 총 인원 (나 포함)
+    settle_per_person   = models.PositiveIntegerField(null=True, blank=True)  # 인당 금액
+    settle_amount        = models.PositiveIntegerField(null=True, blank=True) # 내가 받을 돈 (= 인당 금액 × (인원-1))
+
     class Meta:
         ordering = ['-transacted_at']
 
