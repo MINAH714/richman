@@ -29,3 +29,15 @@ export const getInsight = (year, month) =>
 
 export const getInsightTrend = (year, month) =>
   axios.get(`${BASE}/insight/trend/`, { params: { year, month }, ...authHeader() })
+
+export const toggleSettleTarget = (txId) =>
+  axios.patch(`${BASE}/transactions/${txId}/settle-target/`, {}, authHeader())
+
+export const calculateSettle = (txId, peopleCount) =>
+  axios.patch(`${BASE}/transactions/${txId}/settle-calculate/`, { people_count: peopleCount }, authHeader())
+
+export const completeSettle = (txId) =>
+  axios.patch(`${BASE}/transactions/${txId}/settle-complete/`, {}, authHeader())
+
+export const getSettleDashboard = () =>
+  axios.get(`${BASE}/settle/dashboard/`, authHeader())

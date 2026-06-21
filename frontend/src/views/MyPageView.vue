@@ -22,6 +22,7 @@
         <div class="mypage-panel">
           <CalendarTab v-if="activeTab === 'calendar'" />
           <InsightTab  v-else-if="activeTab === 'insight'" />
+          <SettleDashBoard  v-else-if="activeTab === 'settle'" />
         </div>
       </main>
     </div>
@@ -33,10 +34,12 @@ import { ref } from 'vue'
 import ProfileTab  from '@/components/mypage/ProfileTab.vue'
 import CalendarTab from '@/components/mypage/CalendarTab.vue'
 import InsightTab  from '@/components/mypage/InsightTab.vue'
+import SettleDashBoard from '@/components/mypage/SettleDashBoard.vue'
 
 const tabs = [
   { key: 'calendar', icon: '📅', label: '소비 캘린더' },
   { key: 'insight',  icon: '📊', label: '소비 분석' },
+  { key: 'settle',   icon: '🤝', label: '정산' },
 ]
 const activeTab = ref('calendar')
 </script>

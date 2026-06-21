@@ -11,6 +11,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'description', 'amount', 'transaction_type',
             'category', 'category_display', 'is_fixed',
-            'is_settle_target', 'is_settled', 'settle_amount',
+            'is_settle_target', 'is_settled',
+            'settle_people_count', 'settle_per_person', 'settle_amount',
             'transacted_at',
         ]

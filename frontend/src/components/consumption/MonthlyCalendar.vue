@@ -15,24 +15,32 @@
 
       <!-- 날짜 셀 -->
       <div
-        v-for="day in daysInMonth"
-        :key="day"
-        class="calendar__cell"
-        :class="{
-          'is-today':    isToday(day),
-          'is-no-spend': totalOf(day) === 0 && isPast(day),
-        }"
-        @click="emit('day-click', dateStr(day))"
-      >
-        <span class="calendar__day">{{ day }}</span>
-        <span v-if="totalOf(day) > 0" class="calendar__amount">
-          {{ totalOf(day).toLocaleString() }}원
-        </span>
-        <!-- 무지출 배지 -->
-        <span v-if="totalOf(day) === 0 && isPast(day)" class="calendar__badge">
-          🌟
-        </span>
-      </div>
+  v-for="day in daysInMonth"
+  :key="day"
+  class="calendar__cell"
+  :class="{
+    'is-today':    isToday(day),
+    'is-no-spend': totalOf(day) === 0 && isPast(day),
+  }"
+  @click="emit('day-click', dateStr(day))"
+>
+  <span class="calendar__day">{{ day }}</span>
+
+  <span v-if="totalOf(day) > 0" class="calendar__amount">
+    {{ totalOf(day).toLocaleString() }}원
+  </span>
+
+  <!-- 무지출일 때 가운데 크게 -->
+  <div v-if="totalOf(day) === 0 && isPast(day)" class="calendar__no-spend-center">
+    <svg viewBox="0 0 100 100" class="no-spend-icon">
+      <circle cx="50" cy="52" r="34" fill="#FBBF24" stroke="#D97706" stroke-width="2.5" />
+      <circle cx="50" cy="52" r="27" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="2.5 4" opacity="0.6" />
+      <text x="50" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#92400E">0</text>
+      <path d="M22 18 L25 26 L33 27 L27 33 L29 41 L22 36 L15 41 L17 33 L11 27 L19 26 Z" fill="#FCD34D" stroke="#D97706" stroke-width="1" />
+      <path d="M80 22 L82 28 L88 29 L83 33 L85 39 L80 35 L75 39 L77 33 L72 29 L78 28 Z" fill="#FCD34D" stroke="#D97706" stroke-width="1" />
+    </svg>
+  </div>
+</div>
     </div>
   </div>
 </template>
@@ -111,11 +119,32 @@ const nextMonth = () => {
   cursor: pointer;
   transition: background .15s;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .calendar__cell:hover        { background: #f0f4ff; }
 .calendar__cell.is-today     { border-color: #6c63ff; border-width: 2px; }
-.calendar__cell.is-no-spend  { background: #fffbea; }
+.calendar__cell.is-no-spend {
+  background: #fffbea;
+}
 .calendar__day    { font-size:.85rem; font-weight:600; }
 .calendar__amount { display:block; font-size:.75rem; color:#e05; margin-top:4px; }
-.calendar__badge  { position:absolute; bottom:4px; right:4px; font-size:1rem; }
+.calendar__badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+}
+.calendar__no-spend-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.no-spend-icon {
+  width: 36px;
+  height: 36px;
+}
+
 </style>

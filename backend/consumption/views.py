@@ -11,7 +11,6 @@ from collections import defaultdict
 
 
 class CalendarMonthlyView(APIView):
-    """GET /api/consumption/calendar/?year=2025&month=6"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -25,19 +24,15 @@ class CalendarMonthlyView(APIView):
             transaction_type='expense',
         )
 
-        # 날짜별 합산
-        daily = (
-            qs.annotate(date=TruncDate('transacted_at'))
-              .values('date')
-              .annotate(total=Sum('amount'))
-              .order_by('date')
-        )
+        daily_totals = defaultdict(int)
+        for tx in qs:
+            date_key = tx.transacted_at.date().isoformat()
+            if tx.is_settle_target and tx.is_settled and tx.settle_amount:
+                daily_totals[date_key] += (tx.amount - tx.settle_amount)
+            else:
+                daily_totals[date_key] += tx.amount
 
-        data = {
-            str(row['date']): row['total']
-            for row in daily
-        }
-        return Response({'year': year, 'month': month, 'daily_totals': data})
+        return Response({'year': year, 'month': month, 'daily_totals': dict(daily_totals)})
 
 
 class CalendarDayDetailView(APIView):
@@ -91,7 +86,6 @@ class TransactionCategoryUpdateView(APIView):
         return Response(TransactionSerializer(tx).data)
     
 class InsightView(APIView):
-    """GET /api/consumption/insight/?year=2025&month=6"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -105,56 +99,42 @@ class InsightView(APIView):
             transaction_type='expense',
         )
 
-        # 1) 카테고리별 합산
-        category_data = (
-            expense_qs
-            .values('category')
-            .annotate(total=Sum('amount'), count=Count('id'))
-            .order_by('-total')
-        )
+        categories_dict = defaultdict(lambda: {'amount': 0, 'count': 0})
+        total_expense = 0
 
-        total_expense = expense_qs.aggregate(Sum('amount'))['amount__sum'] or 0
+        for tx in expense_qs:
+            # 정산 완료된 건은 실제 본인 부담분만 반영
+            if tx.is_settle_target and tx.is_settled and tx.settle_amount:
+                real_amount = tx.amount - tx.settle_amount
+            else:
+                real_amount = tx.amount
+
+            categories_dict[tx.category]['amount'] += real_amount
+            categories_dict[tx.category]['count']  += 1
+            total_expense += real_amount
 
         categories = []
-        for row in category_data:
-            cat   = row['category']
-            amt   = row['total']
-            ratio = round(amt / total_expense * 100, 1) if total_expense else 0
+        for cat, val in sorted(categories_dict.items(), key=lambda x: -x[1]['amount']):
+            ratio = round(val['amount'] / total_expense * 100, 1) if total_expense else 0
             categories.append({
                 'category':         cat,
                 'category_display': dict(Transaction._meta.get_field('category').choices).get(cat, cat),
-                'amount':           amt,
-                'count':            row['count'],
+                'amount':           val['amount'],
+                'count':            val['count'],
                 'ratio':            ratio,
             })
 
-        # 2) 고정 지출
-        fixed_qs = Transaction.objects.filter(
-            user=request.user,
-            is_fixed=True,
-            transacted_at__year=year,
-            transacted_at__month=month
-        )
-
-        # 2. 이름(description)과 카테고리가 같으면 금액(amount)을 더해서 묶어버립니다! (★핵심)
-        fixed_list = list(
-            fixed_qs.values('description', 'category')
-            .annotate(amount=Sum('amount'))  # 중복된 SKT 금액들을 하나로 더해줌
-            .order_by('-amount')             # 금액 큰 순서대로 정렬
-        )
-
-# 3. 전체 고정 지출 총합 계산
-        fixed_total = fixed_qs.aggregate(Sum('amount'))['amount__sum'] or 0
+        fixed_qs    = Transaction.objects.filter(user=request.user, is_fixed=True) \
+                          .values('description', 'category', 'amount').distinct()
+        fixed_list  = list(fixed_qs)
+        fixed_total = sum(f['amount'] for f in fixed_list)
 
         return Response({
             'year':          year,
             'month':         month,
             'total_expense': total_expense,
             'categories':    categories,
-            'fixed': {
-                'list':  fixed_list,
-                'total': fixed_total,
-            },
+            'fixed': {'list': fixed_list, 'total': fixed_total},
         })
 
 class InsightTrendView(APIView):
@@ -185,3 +165,106 @@ class InsightTrendView(APIView):
             result.append({'year': year, 'month': month, 'total': total})
 
         return Response({'trend': result})
+    
+class SettleTargetToggleView(APIView):
+    """PATCH /api/consumption/transactions/<pk>/settle-target/
+       '정산 대기' 상태로 전환/해제
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            tx = Transaction.objects.get(pk=pk, user=request.user)
+        except Transaction.DoesNotExist:
+            return Response({'error': '없는 내역입니다.'}, status=404)
+
+        tx.is_settle_target = not tx.is_settle_target
+        # 정산 대상에서 해제하면 관련 데이터 초기화
+        if not tx.is_settle_target:
+            tx.is_settled            = False
+            tx.settle_people_count   = None
+            tx.settle_per_person     = None
+            tx.settle_amount         = None
+        tx.save()
+
+        return Response(TransactionSerializer(tx).data)
+
+
+class SettleCalculateView(APIView):
+    """PATCH /api/consumption/transactions/<pk>/settle-calculate/
+       body: { "people_count": 4 }
+       총액 ÷ 인원수 → 인당 금액 산출, '받을 돈' 갱신
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            tx = Transaction.objects.get(pk=pk, user=request.user, is_settle_target=True)
+        except Transaction.DoesNotExist:
+            return Response({'error': '정산 대상이 아니거나 없는 내역입니다.'}, status=404)
+
+        people_count = request.data.get('people_count')
+        if not people_count or int(people_count) < 2:
+            return Response({'error': 'people_count는 2명 이상이어야 합니다.'}, status=400)
+
+        people_count = int(people_count)
+        per_person   = tx.amount // people_count       # 인당 부담액 (내림)
+        my_receive   = per_person * (people_count - 1)  # 내가 결제했으니, 나머지 인원분을 받음
+
+        tx.settle_people_count = people_count
+        tx.settle_per_person   = per_person
+        tx.settle_amount       = my_receive
+        tx.save()
+
+        return Response(TransactionSerializer(tx).data)
+
+
+class SettleCompleteView(APIView):
+    """PATCH /api/consumption/transactions/<pk>/settle-complete/
+       정산 완료 체크 → 통계에서 받은 금액 제외 반영
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            tx = Transaction.objects.get(pk=pk, user=request.user, is_settle_target=True)
+        except Transaction.DoesNotExist:
+            return Response({'error': '정산 대상이 아니거나 없는 내역입니다.'}, status=404)
+
+        if not tx.settle_amount:
+            return Response({'error': '정산 금액을 먼저 계산해주세요.'}, status=400)
+
+        tx.is_settled = not tx.is_settled   # 토글 (체크/체크 해제)
+        tx.save()
+
+        return Response(TransactionSerializer(tx).data)
+
+
+class SettleDashboardView(APIView):
+    """GET /api/consumption/settle/dashboard/
+       정산 대기중 / 완료된 항목 + 받을 돈 합계
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        targets = Transaction.objects.filter(
+            user=request.user,
+            is_settle_target=True,
+        ).order_by('-transacted_at')
+
+        pending  = targets.filter(is_settled=False)
+        settled  = targets.filter(is_settled=True)
+
+        pending_total = sum(t.settle_amount or 0 for t in pending)
+        settled_total = sum(t.settle_amount or 0 for t in settled)
+
+        return Response({
+            'pending': {
+                'list':  TransactionSerializer(pending, many=True).data,
+                'total': pending_total,
+            },
+            'settled': {
+                'list':  TransactionSerializer(settled, many=True).data,
+                'total': settled_total,
+            },
+        })
