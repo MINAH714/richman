@@ -24,6 +24,7 @@ class TestView(APIView):
 
 
 class SignupView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
 

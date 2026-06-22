@@ -34,6 +34,11 @@ const routes = [
     name: 'KakaoCallback',
     component: KakaoCallbackView,
   },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: () => import('@/views/SignupView.vue'),
+  },
 
   // ── 예적금 (Finlife) ───────────────────────────────────
   {
