@@ -3,11 +3,15 @@ import requests
 from datetime import date, timedelta
 
 import yfinance as yf
+
+from django.core.cache import cache
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
+
 
 from .models import Watchlist, Portfolio, PredictionHistory
 from .serializers import (
@@ -15,6 +19,7 @@ from .serializers import (
     PortfolioSerializer,
     PredictionHistorySerializer,
 )
+from .services.dashboard import get_korean_dashboard_stocks
 
 
 def get_current_price(symbol):
@@ -472,3 +477,312 @@ def prediction_delete(request, pk):
         )
     prediction.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# stocks/views.py 상단 import에 추가
+from yfinance.screener.screener import screen as yf_screen
+from yfinance.screener import EquityQuery
+
+
+# ── 국내 시가총액 상위 종목 (티커 고정 + 현재가 실시간) ──
+KOREAN_TOP_STOCKS = [
+    {'symbol': '005930.KS', 'name': '삼성전자',    'market': 'KRX'},
+    {'symbol': '000660.KS', 'name': 'SK하이닉스',  'market': 'KRX'},
+    {'symbol': '005490.KS', 'name': 'POSCO홀딩스', 'market': 'KRX'},
+    {'symbol': '005380.KS', 'name': '현대차',      'market': 'KRX'},
+    {'symbol': '035420.KS', 'name': 'NAVER',       'market': 'KRX'},
+    {'symbol': '000270.KS', 'name': '기아',        'market': 'KRX'},
+    {'symbol': '068270.KS', 'name': '셀트리온',    'market': 'KRX'},
+    {'symbol': '035720.KS', 'name': '카카오',      'market': 'KRX'},
+    {'symbol': '051910.KS', 'name': 'LG화학',      'market': 'KRX'},
+    {'symbol': '006400.KS', 'name': '삼성SDI',     'market': 'KRX'},
+    {'symbol': '207940.KS', 'name': '삼성바이오로직스', 'market': 'KRX'},
+    {'symbol': '005935.KS', 'name': '삼성전자우',  'market': 'KRX'},
+    {'symbol': '012330.KS', 'name': '현대모비스',  'market': 'KRX'},
+    {'symbol': '028260.KS', 'name': '삼성물산',    'market': 'KRX'},
+    {'symbol': '066570.KS', 'name': 'LG전자',      'market': 'KRX'},
+    {'symbol': '003550.KS', 'name': 'LG',          'market': 'KRX'},
+    {'symbol': '096770.KS', 'name': 'SK이노베이션', 'market': 'KRX'},
+    {'symbol': '017670.KS', 'name': 'SK텔레콤',    'market': 'KRX'},
+    {'symbol': '030200.KS', 'name': 'KT',          'market': 'KRX'},
+    {'symbol': '055550.KS', 'name': '신한지주',    'market': 'KRX'},
+    {'symbol': '105560.KS', 'name': 'KB금융',      'market': 'KRX'},
+    {'symbol': '086790.KS', 'name': '하나금융지주', 'market': 'KRX'},
+    {'symbol': '032830.KS', 'name': '삼성생명',    'market': 'KRX'},
+    {'symbol': '018260.KS', 'name': '삼성에스디에스', 'market': 'KRX'},
+    {'symbol': '034730.KS', 'name': 'SK',          'market': 'KRX'},
+    {'symbol': '011200.KS', 'name': 'HMM',         'market': 'KRX'},
+    {'symbol': '010130.KS', 'name': '고려아연',    'market': 'KRX'},
+    {'symbol': '000810.KS', 'name': '삼성화재',    'market': 'KRX'},
+    {'symbol': '009150.KS', 'name': '삼성전기',    'market': 'KRX'},
+    {'symbol': '024110.KS', 'name': '기업은행',    'market': 'KRX'},
+]
+
+
+def get_korean_stocks_with_price(offset=0, count=30):
+    """
+    국내 종목 현재가 일괄 조회
+    - offset: 시작 인덱스 (더보기용)
+    - count: 가져올 개수
+    """
+    # offset ~ offset+count 범위의 종목만 슬라이싱
+    target = KOREAN_TOP_STOCKS[offset: offset + count]
+    if not target:
+        return [], False   # (결과, has_more)
+
+    symbols = [s['symbol'] for s in target]
+    has_more = (offset + count) < len(KOREAN_TOP_STOCKS)
+
+    try:
+        tickers = yf.Tickers(' '.join(symbols))
+        result  = []
+        for stock in target:
+            sym = stock['symbol']
+            try:
+                info  = tickers.tickers[sym].fast_info
+                price = info.get('lastPrice') or info.get('last_price')
+                prev  = info.get('previousClose') or info.get('previous_close')
+
+                change_rate = None
+                change_type = 'EVEN'
+                if price and prev and prev != 0:
+                    change_rate = round(
+                        (float(price) - float(prev)) / float(prev) * 100, 2
+                    )
+                    change_type = (
+                        'RISE' if change_rate > 0
+                        else 'FALL' if change_rate < 0
+                        else 'EVEN'
+                    )
+
+                result.append({
+                    'symbol':        sym,
+                    'name':          stock['name'],
+                    'market':        stock['market'],
+                    'current_price': round(float(price), 2) if price else None,
+                    'change_rate':   change_rate,
+                    'change_type':   change_type,
+                })
+            except Exception:
+                result.append({
+                    'symbol':        sym,
+                    'name':          stock['name'],
+                    'market':        stock['market'],
+                    'current_price': None,
+                    'change_rate':   None,
+                    'change_type':   'EVEN',
+                })
+        return result, has_more
+
+    except Exception:
+        return [
+            {**s, 'current_price': None, 'change_rate': None, 'change_type': 'EVEN'}
+            for s in target
+        ], has_more
+
+
+def get_us_stocks_with_price(offset=0, count=25):
+    """
+    미국 시가총액 상위 종목 실시간 조회
+    - EquityQuery로 미국 지역 + 시가총액 상위 필터
+    - offset으로 페이지네이션
+    - BRK-A/BRK-B 같은 중복 회사 제거
+    """
+    try:
+        q = EquityQuery('and', [
+            EquityQuery('gt', ['intradaymarketcap', 100_000_000_000]),  # 시총 1000억$ 이상
+            EquityQuery('eq', ['region', 'us']),                        # 미국 지역만
+        ])
+        # offset + count 만큼 가져온 뒤 슬라이싱
+        fetch_count = offset + count + 5   # 중복 제거 여유분 +5
+        result_data = yf_screen(
+            q,
+            sortField='intradaymarketcap',
+            sortAsc=False,
+            count=fetch_count,
+        )
+        all_quotes = result_data.get('quotes', [])
+
+        # 중복 회사 제거 (같은 longName이면 하나만 유지)
+        seen_names = set()
+        deduped = []
+        for q_item in all_quotes:
+            name = q_item.get('longName') or q_item.get('shortName', '')
+            # 회사명 앞 2단어 기준으로 중복 체크 (예: "Berkshire Hathaway Inc." → "Berkshire Hathaway")
+            key = ' '.join(name.split()[:2]).lower()
+            if key not in seen_names:
+                seen_names.add(key)
+                deduped.append(q_item)
+
+        # offset ~ offset+count 슬라이싱
+        target   = deduped[offset: offset + count]
+        has_more = len(deduped) > offset + count
+
+        result = []
+        for item in target:
+            price       = item.get('regularMarketPrice')
+            change_rate = item.get('regularMarketChangePercent')
+            change_type = 'EVEN'
+            if change_rate is not None:
+                change_type = (
+                    'RISE' if change_rate > 0
+                    else 'FALL' if change_rate < 0
+                    else 'EVEN'
+                )
+                change_rate = round(change_rate, 2)
+
+            result.append({
+                'symbol':        item.get('symbol', ''),
+                'name':          item.get('longName') or item.get('shortName', ''),
+                'market':        item.get('exchange', 'US'),
+                'current_price': round(float(price), 2) if price else None,
+                'change_rate':   change_rate,
+                'change_type':   change_type,
+            })
+        return result, has_more
+
+    except Exception as e:
+        return [], False
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stock_dashboard(request):
+    """
+    안전 무결성 버전 대시보드 뷰
+    """
+    tab = request.query_params.get('tab', 'kr')
+    source = 'yfinance'
+    
+    # settings에 값이 없을 때를 대비한 안전 가드레이르 적용
+    default_page_size = getattr(settings, 'STOCK_DASHBOARD_PAGE_SIZE', 30)
+    max_page_size = getattr(settings, 'STOCK_DASHBOARD_MAX_PAGE_SIZE', 100)
+
+    try:
+        offset = max(int(request.query_params.get('offset', 0)), 0)
+        count = max(int(request.query_params.get('count', default_page_size)), 1)
+    except ValueError:
+        return Response(
+            {'error': 'offset과 count는 숫자여야 합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    count = min(count, max_page_size)
+
+    # 탭에 따라 데이터 조회
+    if tab == 'us':
+        # get_us_stocks_with_price 함수가 호출 가능한지 검증 후 실행
+        if 'get_us_stocks_with_price' in globals():
+            stocks, has_more = get_us_stocks_with_price(offset=offset, count=count)
+        else:
+            stocks, has_more = [], False
+    else:
+        # 1. 키움증권 API 조회 시도
+        kiwoom_result = None
+        if 'get_kiwoom_dashboard_stocks' in globals():
+            try:
+                kiwoom_result = get_kiwoom_dashboard_stocks(offset=offset, count=count)
+            except Exception as e:
+                print(f"[Kiwoom Execution Error] {e}")
+
+        if kiwoom_result is not None:
+            stocks, has_more = kiwoom_result
+            source = 'kiwoom'
+        else:
+            # 2. 실패 시 기존 폴백 함수 실행 (존재 여부 확인)
+            if 'get_korean_dashboard_stocks' in globals():
+                try:
+                    stocks, has_more, source = get_korean_dashboard_stocks(offset=offset, count=count)
+                except Exception as e:
+                    print(f"[Fallback Base Error] {e}")
+                    stocks, has_more = [], False
+            else:
+                stocks, has_more = [], False
+
+    # 유저의 관심 종목 심볼 목록 필터링
+    try:
+        watched = set(
+            Watchlist.objects.filter(user=request.user)
+            .values_list('symbol', flat=True)
+        )
+    except Exception as e:
+        print(f"[Database Watchlist Error] {e}")
+        watched = set()
+
+    # 안전하게 결과 주입
+    for stock in stocks:
+        if isinstance(stock, dict):
+            stock['is_watched'] = stock.get('symbol') in watched
+
+    return Response({
+        'stocks':   stocks,
+        'has_more': has_more,
+        'offset':   offset,
+        'count':    count,
+        'source':   source,
+    })
+
+
+# 키움증권 API 설정 상수
+KIWOOM_BASE_URL = "https://openapi.kiwoom.com"  # 실제 키움 개발 가이드의 실서버/테스트서버 URL로 확인 필요
+
+def get_kiwoom_access_token():
+    """
+    키움증권 OAuth2.0 Access Token 발급 및 캐싱 (유효기간 고려)
+    """
+    cache_key = "kiwoom_access_token"
+    token = cache.get(cache_key)
+    
+    if token:
+        return token
+
+    url = f"{KIWOOM_BASE_URL}/v1/auth/token"  # 키움 REST API 토큰 엔드포인트 예시
+    payload = {
+        "grant_type": "client_credentials",
+        "appkey": settings.KIWOOM_APP_KEY,
+        "appsecret": settings.KIWOOM_APP_SECRET
+    }
+    headers = {"content-type": "application/json"}
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_with == 200:
+            data = response.json()
+            access_token = data.get("access_token")
+            expires_in = data.get("expires_in", 3600)  # 기본 1시간 만료 기준
+            
+            # 만료 5분 전에 갱신하도록 캐시 타임 설정
+            cache.set(cache_key, access_token, expires_in - 300)
+            return access_token
+    except Exception as e:
+        print(f"Kiwoom Token Error: {e}")
+    
+    return None
+
+def get_kiwoom_market_cap_top30():
+    """
+    키움 API를 통해 국내 주식 시가총액 상위 30개 종목 정보 가져오기
+    """
+    token = get_kiwoom_access_token()
+    if not token:
+        return []
+
+    # 키움증권 시가총액 상위 혹은 전종목 조회 API 엔드포인트 및 TR 설정 필요
+    # 아래는 표준적인 REST 스크리너/랭킹 API 예시 구조입니다.
+    url = f"{KIWOOM_BASE_URL}/v1/ranking/market-cap" 
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json"
+    }
+    params = {
+        "market_code": "0", # 0: 전체, 1: 코스피, 2: 코스닥 등 (키움 명세 기준)
+        "count": 30
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            # 키움 응답 포맷에 맞춰 파싱 (예시: [{ 'mksc_shrn_iscd': '005930', 'hts_id_nm': '삼성전자', 'stck_prpr': '75000', ... }])
+            return response.json().get("output", [])
+    except Exception as e:
+        print(f"Kiwoom Market Cap Error: {e}")
+    return []

@@ -1,49 +1,138 @@
-<!-- src/views/StockWatchlistView.vue -->
 <template>
-  <div class="watchlist-page">
-    <div class="page-header">
-      <h1>📈 관심 종목</h1>
-      <p class="subtitle">즐겨찾기한 종목과 포트폴리오를 한눈에 확인하세요.</p>
-      <router-link to="/stocks/prediction" class="link-prediction">
-        🤖 AI 예측 히스토리 보기 →
-      </router-link>
-    </div>
+  <div class="dashboard">
 
     <div class="search-section">
-      <StockSearchBar/>
+      <StockSearchBar />
     </div>
 
-    <!-- 종목 추가 입력 폼 -->
-    <div class="add-form">
-      <input v-model="newSymbol" placeholder="티커 입력 (예: AAPL, 005930.KS)" @keyup.enter="handleAdd" />
-      <input v-model="newName"   placeholder="종목명 (예: Apple, 삼성전자)" />
-      <input v-model="newMarket" placeholder="거래소 (예: NASDAQ, KRX)" />
-      <button @click="handleAdd" :disabled="!canAdd">+ 추가</button>
-    </div>
-    <p v-if="addError" class="error-msg">{{ addError }}</p>
+    <section v-if="store.items.length > 0" class="favorites-section">
+      <h2 class="section-title">⭐ 관심 종목</h2>
+      <div class="fav-grid">
+        <div
+          v-for="item in store.items"
+          :key="item.id"
+          class="fav-card"
+          @click="goToChart(item.symbol)"
+        >
+          <div class="fav-card-header">
+            <span class="coin-kor">{{ item.name }}</span>
+            <button class="star-btn active" @click.stop="handleWatchlistDelete(item.id)">★</button>
+          </div>
+          <div class="fav-card-market">{{ item.symbol }} · {{ item.market }}</div>
+          <div class="fav-card-price">
+            {{ item.current_price != null
+                ? item.current_price.toLocaleString('ko-KR')
+                : '로딩 중...' }}
+          </div>
 
-    <!-- 로딩 상태 -->
-    <div v-if="store.isLoading" class="loading">불러오는 중...</div>
+          <div class="fav-card-price">
+            {{ item.price != null
+                ? item.price.toLocaleString('ko-KR') + (store.activeTab === 'kr' ? '원' : '$')
+                : '로딩 중...' }}
+          </div>
+          <div
+            v-if="item.profit_rate != null"
+            class="fav-card-rate"
+            :class="item.profit_rate >= 0 ? 'up' : 'down'"
+          >
+            {{ item.profit_rate >= 0 ? '+' : '' }}{{ item.profit_rate }}%
+          </div>
+          <div v-else class="fav-card-rate flat">
+            <button class="btn-portfolio-mini" @click.stop="openPortfolioModal(item)">
+              + 수익률 입력
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <!-- 관심 종목 없을 때 -->
-    <div v-else-if="store.items.length === 0" class="empty">
-      <p>아직 추가된 관심 종목이 없어요.</p>
-      <p>위 입력창에서 종목을 추가해 보세요! 🔍</p>
-    </div>
+    <hr v-if="store.items.length > 0" class="divider" />
 
-    <!-- 관심 종목 카드 목록 -->
-    <div v-else class="card-grid">
-      <WatchlistCard
-        v-for="item in store.items"
-        :key="item.id"
-        :item="item"
-        @delete="handleDelete"
-        @edit-portfolio="openPortfolioModal"
-        @go-chart="goToChart"
-      />
-    </div>
+    <section>
+      <div class="toolbar">
+        <div class="tab-group">
+          <button
+            :class="['tab-btn', { active: store.activeTab === 'kr' }]"
+            @click="store.changeTab('kr')"
+          >🇰🇷 국내 주식</button>
+          <button
+            :class="['tab-btn', { active: store.activeTab === 'us' }]"
+            @click="store.changeTab('us')"
+          >🇺🇸 미국 주식</button>
+        </div>
 
-    <!-- 포트폴리오 입력 모달 -->
+        <div class="refresh-status">
+          <span :class="['refresh-dot', { blink: store.isRefreshing }]"></span>
+          <span class="refresh-label">10초마다 자동 갱신</span>
+        </div>
+      </div>
+
+      <div v-if="store.isLoading && store.dashboardItems.length === 0" class="loading">
+        주식 데이터를 불러오는 중...
+      </div>
+
+      <table v-else class="coin-table">
+        <thead>
+          <tr>
+            <th>종목명</th>
+            <th>티커</th>
+            <th>거래소</th>
+            <th class="text-right">현재가</th>
+            <th class="text-right">전일대비</th>
+            <th class="text-right">등락률</th>
+            <th class="text-center">관심 종목</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="item in store.dashboardItems"
+            :key="item.symbol"
+            class="coin-row"
+            :class="{ refreshing: store.isRefreshing }"
+            @click="goToChart(item.symbol)"
+          >
+            <td class="name-cell">
+              <span class="kor">{{ item.name }}</span>
+            </td>
+            <td class="market-code">{{ item.symbol }}</td>
+            <td class="market-code">{{ item.market }}</td>
+            <td class="price">
+              {{ item.price != null ? item.price.toLocaleString('ko-KR') : '-' }}
+            </td>
+            <td class="price" :class="changeClass(item.change)">
+              {{ item.change != null ? (item.change > 0 ? '+' : '') + item.change.toLocaleString('ko-KR') : '-' }}
+            </td>
+            <td class="rate" :class="changeClass(item.change_rate)">
+              {{ item.change_rate != null ? (item.change_rate > 0 ? '+' : '') + item.change_rate + '%' : '-' }}
+            </td>
+            <td class="text-center">
+              <button
+                :class="['star-btn', { active: item.is_watched }]"
+                @click.stop="store.toggleWatchlist(item)"
+                :title="item.is_watched ? '관심 종목 해제' : '관심 종목 추가'"
+              >
+                {{ item.is_watched ? '★' : '☆' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="load-more-wrap">
+        <button
+          v-if="store.hasMore"
+          class="btn-load-more"
+          :disabled="store.isLoadingMore"
+          @click="store.loadMore()"
+        >
+          {{ store.isLoadingMore ? '불러오는 중...' : `⬇ 더보기 (${store.dashboardItems.length}개 표시 중)` }}
+        </button>
+        <p v-else-if="store.dashboardItems.length > 0" class="no-more">
+          ✅ 전체 {{ store.dashboardItems.length }}개 종목을 모두 불러왔습니다.
+        </p>
+      </div>
+    </section>
+
     <PortfolioModal
       v-if="modalTarget"
       :watchlist-id="modalTarget.id"
@@ -53,58 +142,22 @@
       @close="modalTarget = null"
       @saved="handlePortfolioSave"
     />
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useWatchlistStore } from '@/stores/watchlist'
-import WatchlistCard from '@/components/stocks/WatchlistCard.vue'
-import PortfolioModal from '@/components/stocks/PortfolioModal.vue'
 import StockSearchBar from '@/components/stocks/StockSearchBar.vue'
+import PortfolioModal from '@/components/stocks/PortfolioModal.vue'
 
-const store = useWatchlistStore()
+const store  = useWatchlistStore()
 const router = useRouter()
 
-// ── 관심 종목 추가 폼 ─────────────────────────────────
-const newSymbol = ref('')
-const newName   = ref('')
-const newMarket = ref('')
-const addError  = ref('')
-
-const canAdd = computed(() =>
-  newSymbol.value.trim() && newName.value.trim() && newMarket.value.trim()
-)
-
-async function handleAdd() {
-  if (!canAdd.value) return
-  addError.value = ''
-
-  const result = await store.addToWatchlist({
-    symbol: newSymbol.value.trim().toUpperCase(),
-    name:   newName.value.trim(),
-    market: newMarket.value.trim().toUpperCase(),
-  })
-
-  if (result.success) {
-    // 성공하면 입력창 초기화
-    newSymbol.value = ''
-    newName.value   = ''
-    newMarket.value = ''
-  } else {
-    addError.value = result.message
-  }
-}
-
-// ── 관심 종목 삭제 ────────────────────────────────────
-async function handleDelete(id) {
-  if (!confirm('관심 종목에서 삭제할까요?')) return
-  await store.removeFromWatchlist(id)
-}
-
 // ── 포트폴리오 모달 ───────────────────────────────────
-const modalTarget = ref(null)   // 현재 편집 중인 종목 (null이면 모달 닫힘)
+const modalTarget = ref(null)
 
 function openPortfolioModal(item) {
   modalTarget.value = item
@@ -113,60 +166,179 @@ function openPortfolioModal(item) {
 async function handlePortfolioSave({ watchlistId, data }) {
   const result = await store.savePortfolio(watchlistId, data)
   if (result.success) {
-    modalTarget.value = null   // 저장 성공 시 모달 닫기
-    // 수익률 반영을 위해 목록 새로고침
-    store.fetchWatchlist()
+    modalTarget.value = null
+    await store.loadDashboard()
   }
 }
 
-// ── 차트 페이지 이동 (기능 2에서 연결 예정) ───────────
+// ── 관심 종목 삭제 ────────────────────────────────────
+async function handleWatchlistDelete(id) {
+  if (!confirm('관심 종목에서 삭제할까요?')) return
+  await store.removeFromWatchlist(id)
+}
+
+// ── 차트 이동 ─────────────────────────────────────────
 function goToChart(symbol) {
   router.push({ name: 'stock-chart', params: { symbol } })
 }
 
-// ── 페이지 진입 시 목록 불러오기 ─────────────────────
-onMounted(() => {
-  store.fetchWatchlist()
+// ── 등락 클래스 (change 값을 기준으로 판별하도록 간소화) ──
+function changeClass(value) {
+  if (!value || value === 0) return 'flat'
+  return value > 0 ? 'up' : 'down'
+}
+
+// ── 라이프사이클: 폴링 제어 ────────────────────────────
+onMounted(async () => {
+  await store.fetchWatchlist()   // 관심 종목 카드 상단 로드
+  await store.startPolling()     // 수정: 데이터 확보 전 공백 방지를 위한 대시보드 기동
+})
+
+onUnmounted(() => {
+  store.stopPolling()
 })
 </script>
 
 <style scoped>
-.watchlist-page { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
-.page-header { margin-bottom: 28px; }
-.page-header h1 { font-size: 28px; font-weight: 700; margin: 0 0 6px; }
-.subtitle { color: #888; font-size: 14px; }
-.add-form {
-  display: flex; gap: 8px; flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-.add-form input {
-  flex: 1; min-width: 160px; padding: 10px 14px;
-  border: 1px solid #ddd; border-radius: 8px; font-size: 14px;
-}
-.add-form button {
-  padding: 10px 20px; background: #2563eb; color: #fff;
-  border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
-  white-space: nowrap;
-}
-.add-form button:disabled { background: #aaa; cursor: not-allowed; }
-.error-msg { color: #ef4444; font-size: 13px; margin-bottom: 16px; }
-.loading { text-align: center; padding: 60px; color: #aaa; }
-.empty { text-align: center; padding: 60px; color: #aaa; line-height: 2; }
-.card-grid {
+.dashboard { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+.section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; }
+.divider { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
+.search-section { margin-bottom: 1.5rem; }
+
+/* 정렬 헬퍼 클래스 */
+.text-right { text-align: right !important; }
+.text-center { text-align: center !important; }
+
+/* 관심 종목 카드 */
+.fav-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem; margin-bottom: 1rem;
 }
-.search-section {
-  margin-bottom: 24px;
+.fav-card {
+  border: 1px solid #e5e7eb; border-radius: 10px;
+  padding: 0.875rem; cursor: pointer; transition: box-shadow 0.15s;
 }
-.link-prediction {
-  display: inline-block;
-  margin-top: 8px;
-  font-size: 13px;
+.fav-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.fav-card-header { display: flex; justify-content: space-between; align-items: center; }
+.coin-kor {
+  font-weight: 600; font-size: 0.9rem;
+  white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 100px;
+}
+.fav-card-market { font-size: 0.72rem; color: #9ca3af; margin-top: 0.2rem; }
+.fav-card-price  { font-size: 1rem; font-weight: 600; margin-top: 0.5rem; }
+.fav-card-rate   { font-size: 0.85rem; margin-top: 0.15rem; }
+.btn-portfolio-mini {
+  font-size: 11px; color: #2563eb;
+  background: none; border: none; cursor: pointer; padding: 0;
+}
+
+/* 탭 + 갱신 상태 툴바 */
+.toolbar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;
+}
+.tab-group { display: flex; gap: 8px; }
+.tab-btn {
+  padding: 8px 20px; border: 1.5px solid #d1d5db;
+  border-radius: 99px; background: #fff;
+  font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.tab-btn:hover { border-color: #2563eb; color: #2563eb; }
+.tab-btn.active {
+  background: #2563eb; color: #fff;
+  border-color: #2563eb; font-weight: 700;
+}
+
+/* 자동 갱신 표시 */
+.refresh-status {
+  display: flex; align-items: center; gap: 6px;
+}
+.refresh-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10b981;
+  transition: background 0.2s;
+}
+.refresh-dot.blink {
+  animation: blink-pulse 0.2s ease-in-out;
+}
+@keyframes blink-pulse {
+  0%   { background: #10b981; transform: scale(1);   }
+  50%  { background: #f59e0b; transform: scale(1.6); }
+  100% { background: #10b981; transform: scale(1);   }
+}
+.refresh-label { font-size: 12px; color: #9ca3af; }
+
+/* 테이블 */
+.coin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.coin-table th {
+  text-align: left; padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+  color: #6b7280; font-weight: 500; white-space: nowrap;
+}
+.coin-row { cursor: pointer; transition: background 0.1s; }
+.coin-row:hover { background: #f9fafb; }
+.coin-row td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #f3f4f6; }
+
+/* 갱신 피드백 애니메이션 */
+.coin-row.refreshing {
+  animation: row-flash 0.2s ease-in-out;
+}
+@keyframes row-flash {
+  0%   { background: transparent; }
+  50%  { background: #fefce8; }
+  100% { background: transparent; }
+}
+
+.name-cell { display: flex; flex-direction: column; }
+.kor        { font-weight: 500; }
+.market-code { color: #6b7280; font-size: 0.8rem; }
+.price  { font-weight: 600; text-align: right; }
+.rate   { text-align: right; font-weight: 500; }
+.up     { color: #ef4444; }
+.down   { color: #3b82f6; }
+.flat   { color: #6b7280; }
+
+.star-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.2rem; color: #d1d5db;
+  padding: 0; transition: color 0.15s;
+}
+.star-btn.active { color: #f59e0b; }
+.star-btn:hover  { color: #f59e0b; }
+
+.loading { color: #9ca3af; padding: 4rem 0; text-align: center; font-size: 0.95rem; }
+
+/* 더보기 버튼 */
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+.btn-load-more {
+  padding: 10px 32px;
+  border: 1.5px solid #2563eb;
+  border-radius: 99px;
+  background: #fff;
   color: #2563eb;
-  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
 }
-.link-prediction:hover { text-decoration: underline; }
+.btn-load-more:hover:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+}
+.btn-load-more:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.no-more {
+  font-size: 13px;
+  color: #9ca3af;
+}
 </style>
