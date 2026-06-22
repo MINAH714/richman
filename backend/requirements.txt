@@ -5,6 +5,7 @@ beautifulsoup4==4.15.0
 certifi==2026.5.20
 cffi==2.0.0
 charset-normalizer==3.4.7
+colorama==0.4.6
 curl_cffi==0.15.0
 distro==1.9.0
 Django==5.2.14
@@ -13,6 +14,7 @@ django-environ==0.13.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 environ==1.0
+et_xmlfile==2.0.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
@@ -23,6 +25,7 @@ mdurl==0.1.2
 multitasking==0.0.13
 numpy==2.4.6
 openai==2.41.1
+openpyxl==3.1.5
 pandas==3.0.3
 peewee==4.0.8
 platformdirs==4.10.0
@@ -44,6 +47,7 @@ sqlparse==0.5.5
 tqdm==4.68.2
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+tzdata==2026.2
 urllib3==2.7.0
 websockets==16.0
 yfinance==1.4.1

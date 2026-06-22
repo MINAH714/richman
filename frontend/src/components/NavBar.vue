@@ -31,7 +31,16 @@
           <router-link to="/stocks/watchlist" class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
             주식/현물
+            <i class="ti ti-chevron-down arrow" aria-hidden="true"></i>
           </router-link>
+          <ul class="dropdown-menu">
+            <li>
+              <router-link to="/stocks/chart/AAPL" class="dropdown-link">주식 시세표</router-link>
+            </li>
+            <li>
+              <router-link to="/commodities" class="dropdown-link">금/은 현물 시세</router-link>
+            </li>
+          </ul>
         </li>
 
         <li class="nav-item-dropdown">
@@ -57,7 +66,6 @@
           </router-link>
         </li>
       </ul>
-
       <div class="nav-auth">
         <template v-if="authStore.isLoggedIn">
           <div class="profile-menu" ref="profileMenuRef">
@@ -68,11 +76,11 @@
             </button>
 
             <transition name="dropdown-fade">
-              <div v-if="dropdownOpen" class="profile-dropdown">
+              <div v-if="dropdownOpen" class="profile-dropdown"></div>
                 <router-link to="/mypage" class="dropdown-item" @click="dropdownOpen = false">
                   <i class="ti ti-user" aria-hidden="true"></i> 마이페이지
                 </router-link>
-                <div class="dropdown-divider" />
+                <div class="dropdown-divider">
                 <button class="dropdown-item dropdown-item--danger" @click="logout">
                   <i class="ti ti-logout" aria-hidden="true"></i> 로그아웃
                 </button>

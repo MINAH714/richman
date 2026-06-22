@@ -34,6 +34,11 @@ const routes = [
     name: 'KakaoCallback',
     component: KakaoCallbackView,
   },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: () => import('@/views/SignupView.vue'),
+  },
 
   // ── 예적금 (Finlife) ───────────────────────────────────
   {
@@ -118,6 +123,18 @@ const routes = [
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
   },
+
+  {
+    path: '/bank-map',
+    name: 'bank-map',
+    component: () => import('@/views/BankMapView.vue'),
+  },
+
+  {
+      path: '/commodities',
+      name: 'commodities',
+      component: () => import('@/views/CommoditiesView.vue'),
+    },
 ]
 
 const router = createRouter({
