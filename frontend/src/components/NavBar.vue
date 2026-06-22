@@ -1,4 +1,4 @@
-<!-- src/components/NavBar.vue -->
+// frontend/src/components/NavBar.vue
 <template>
   <nav class="navbar">
     <div class="nav-inner">
@@ -9,9 +9,15 @@
 
       <ul class="nav-menu">
         <li>
+          <router-link to="/consumption" class="nav-item">
+            <i class="ti ti-building-bank" aria-hidden="true"></i>
+            예적금
+          </router-link>
+        </li>
+        <li>
           <router-link to="/stocks/watchlist" class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
-            주식
+            주식/현물
           </router-link>
         </li>
         <li>
@@ -29,7 +35,7 @@
         <li>
           <router-link to="/chat" class="nav-item">
             <i class="ti ti-robot" aria-hidden="true"></i>
-            챗봇
+            AI 챗봇
           </router-link>
         </li>
       </ul>
@@ -46,11 +52,11 @@
             <transition name="dropdown-fade">
               <div v-if="dropdownOpen" class="profile-dropdown">
                 <router-link to="/mypage" class="dropdown-item" @click="dropdownOpen = false">
-                  👤 마이페이지
+                  <i class="ti ti-user" aria-hidden="true"></i> 마이페이지
                 </router-link>
                 <div class="dropdown-divider" />
                 <button class="dropdown-item dropdown-item--danger" @click="logout">
-                  🚪 로그아웃
+                  <i class="ti ti-logout" aria-hidden="true"></i> 로그아웃
                 </button>
               </div>
             </transition>
@@ -75,17 +81,18 @@ const router = useRouter()
 const dropdownOpen   = ref(false)
 const profileMenuRef = ref(null)
 
+// 닉네임이나 유저네임의 첫 글자를 프로필 아이콘으로 사용
 const initial = computed(() =>
-  (authStore.user?.nickname || authStore.user?.username || '?')[0]
+  (authStore.user?.nickname || authStore.user?.username || '?')[0].toUpperCase()
 )
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
 }
 
-function logout() {
+async function logout() {
   dropdownOpen.value = false
-  authStore.logout()
+  await authStore.logout()
   router.push('/')
 }
 
@@ -104,9 +111,9 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--color-bg-card);
-  border-bottom: 0.5px solid var(--color-border);
-  font-family: var(--font-main);
+  background: var(--color-bg-card, #ffffff);
+  border-bottom: 0.5px solid var(--color-border, #e2e8f0);
+  font-family: var(--font-main, sans-serif);
 }
 .nav-inner {
   max-width: 1200px;
@@ -121,13 +128,13 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #1e293b);
   text-decoration: none;
   flex-shrink: 0;
 }
-.nav-logo i { font-size: 18px; color: var(--color-primary); }
+.nav-logo i { font-size: 20px; color: var(--color-primary, #42b883); }
 .nav-menu {
   display: flex;
   align-items: center;
@@ -142,36 +149,36 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border-radius: var(--radius-md);
-  font-size: 0.84rem;
+  border-radius: var(--radius-md, 6px);
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #64748b);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.nav-item i { font-size: 16px; }
-.nav-item:hover { background: var(--color-bg-secondary); color: var(--color-text-primary); }
+.nav-item i { font-size: 18px; }
+.nav-item:hover { background: var(--color-bg-secondary, #f1f5f9); color: var(--color-text-primary, #1e293b); }
 .router-link-active.nav-item {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  background: var(--color-primary-light, #ecfdf5);
+  color: var(--color-primary, #42b883);
 }
 .nav-auth { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.nav-username { font-size: 0.8rem; color: var(--color-text-secondary); font-weight: 600; }
+.nav-username { font-size: 0.85rem; color: var(--color-text-secondary, #64748b); font-weight: 600; }
 .nav-btn {
-  padding: 7px 14px;
-  border-radius: var(--radius-md);
-  font-size: 0.8rem;
-  font-weight: 500;
-  font-family: var(--font-main);
+  padding: 7px 16px;
+  border-radius: var(--radius-md, 6px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-main, sans-serif);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s;
   border: none;
 }
-.nav-btn--primary { background: var(--color-primary); color: white; }
-.nav-btn--primary:hover { background: var(--color-primary-hover); }
+.nav-btn--primary { background: var(--color-primary, #42b883); color: white; }
+.nav-btn--primary:hover { background: var(--color-primary-hover, #34d399); }
 
 /* 프로필 드롭다운 */
 .profile-menu { position: relative; }
@@ -188,14 +195,14 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   transition: background 0.15s, border-color 0.15s;
 }
 .profile-trigger:hover {
-  background: var(--color-bg-secondary);
-  border-color: var(--color-border);
+  background: var(--color-bg-secondary, #f1f5f9);
+  border-color: var(--color-border, #e2e8f0);
 }
 .profile-icon {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: var(--color-primary, #42b883);
   color: white;
   font-size: 0.8rem;
   font-weight: 700;
@@ -206,7 +213,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 }
 .dropdown-arrow {
   font-size: 0.7rem;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary, #94a3b8);
   transition: transform 0.15s;
 }
 .dropdown-arrow.open { transform: rotate(180deg); }
@@ -216,9 +223,9 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   top: calc(100% + 8px);
   right: 0;
   width: 180px;
-  background: var(--color-bg-card);
-  border: 0.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  background: var(--color-bg-card, #ffffff);
+  border: 0.5px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 6px);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
   padding: 6px;
   display: flex;
@@ -233,7 +240,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   border-radius: 7px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary, #64748b);
   text-decoration: none;
   background: none;
   border: none;
@@ -243,11 +250,11 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   width: 100%;
   transition: background 0.15s;
 }
-.dropdown-item:hover { background: var(--color-bg-secondary); color: var(--color-primary); }
+.dropdown-item:hover { background: var(--color-bg-secondary, #f1f5f9); color: var(--color-primary, #42b883); }
 .dropdown-item--danger:hover { background: #fef2f2; color: #ef4444; }
 .dropdown-divider {
   height: 0.5px;
-  background: var(--color-border);
+  background: var(--color-border, #e2e8f0);
   margin: 4px 2px;
 }
 
