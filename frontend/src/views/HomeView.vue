@@ -15,7 +15,7 @@
             <router-link to="/chat" class="btn btn-primary">
               <i class="ti ti-robot" aria-hidden="true"></i> AI 비서 시작
             </router-link>
-            <router-link to="/consumption" class="btn btn-outline">
+            <router-link to="/finlife" class="btn btn-outline">
               <i class="ti ti-building-bank" aria-hidden="true"></i> 예적금
             </router-link>
             <router-link to="/stocks/watchlist" class="btn btn-outline">

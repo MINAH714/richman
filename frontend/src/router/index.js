@@ -35,6 +35,18 @@ const routes = [
     component: KakaoCallbackView,
   },
 
+  // ── 예적금 (Finlife) ───────────────────────────────────
+  {
+    path: '/finlife',
+    name: 'finlife-list',
+    component: () => import('@/views/FinlifeView.vue'),
+  },
+  {
+    path: '/finlife/:id',
+    name: 'finlife-detail',
+    component: () => import('@/views/FinlifeDetailView.vue'),
+  },
+
   // ── 코인 대시보드 ──────────────────────────────────────
   {
     path: '/crypto',
@@ -85,25 +97,26 @@ const routes = [
     meta: { requiresAuth: true},
   },
 
-  // ── 404 ───────────────────────────────────────────────
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: () => import('@/views/NotFoundView.vue'),
-  },
-
   // ── 챗봇 ───────────────────────────────────────────────
   {
-  path: '/chat',
-  name: 'chat',
-  component: () => import('@/views/ChatPageView.vue'),
-},
+    path: '/chat',
+    name: 'chat',
+    component: () => import('@/views/ChatPageView.vue'),
+  },
 
+  // ── 마이페이지 ─────────────────────────────────────────
   {
     path: '/mypage',
     name: 'mypage',
     component: () => import('@/views/MyPageView.vue'),
     meta: { requiresAuth: true },
+  },
+
+  // ── 404 (항상 가장 마지막에 위치해야 함) ────────────────
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/views/NotFoundView.vue'),
   },
 ]
 
