@@ -2,41 +2,45 @@
 <template>
   <nav class="navbar">
     <div class="nav-inner">
-      <!-- 로고 -->
       <router-link to="/" class="nav-logo">
-        💰 Richman
+        <i class="ti ti-pig-money" aria-hidden="true"></i>
+        Richman
       </router-link>
 
       <ul class="nav-menu">
         <li>
-          <router-link to="/crypto" class="nav-item">
-            🪙 크립토
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/crypto/buzz" class="nav-item">
-            🔥 Buzz
-          </router-link>
-        </li>
-        <li>
-          <router-link to="/stocks/watchlist" class="nav-item">
-            📈 주식
-          </router-link>
-        </li>
-        <li>
           <span class="nav-item nav-disabled" title="준비 중">
-            💳 소비
+            <i class="ti ti-receipt-2" aria-hidden="true"></i>
+            소비
             <span class="nav-badge">준비중</span>
           </span>
         </li>
         <li>
+          <router-link to="/stocks/watchlist" class="nav-item">
+            <i class="ti ti-chart-candle" aria-hidden="true"></i>
+            주식
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/crypto" class="nav-item">
+            <i class="ti ti-coin" aria-hidden="true"></i>
+            크립토
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/crypto/buzz" class="nav-item">
+            <i class="ti ti-flame" aria-hidden="true"></i>
+            Buzz
+          </router-link>
+        </li>
+        <li>
           <router-link to="/chat" class="nav-item">
-            🤖 챗봇
+            <i class="ti ti-robot" aria-hidden="true"></i>
+            챗봇
           </router-link>
         </li>
       </ul>
 
-      <!-- 로그인/유저 -->
       <div class="nav-auth">
         <template v-if="authStore.isLoggedIn">
           <div class="profile-menu" ref="profileMenuRef">
@@ -95,9 +99,9 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   position: sticky;
   top: 0;
   z-index: 100;
-  background: white;
-  border-bottom: 1px solid #e2ecf9;
-  font-family: 'IBM Plex Mono', monospace;
+  background: var(--color-bg-card);
+  border-bottom: 0.5px solid var(--color-border);
+  font-family: var(--font-main);
 }
 .nav-inner {
   max-width: 1200px;
@@ -109,13 +113,16 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   gap: 32px;
 }
 .nav-logo {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
   text-decoration: none;
   flex-shrink: 0;
 }
-.nav-logo:hover { color: #3b6fd4; }
+.nav-logo i { font-size: 18px; color: var(--color-primary); }
 .nav-menu {
   display: flex;
   align-items: center;
@@ -128,57 +135,52 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text-secondary);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.nav-item:hover { background: #f0f6ff; color: #3b6fd4; }
+.nav-item i { font-size: 16px; }
+.nav-item:hover { background: var(--color-bg-secondary); color: var(--color-text-primary); }
 .router-link-active.nav-item {
-  background: #f0f6ff;
-  color: #3b6fd4;
-  font-weight: 700;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
-.nav-disabled {
-  color: #94a3b8;
-  cursor: not-allowed;
-}
-.nav-disabled:hover { background: none; color: #94a3b8; }
+.nav-disabled { color: var(--color-text-tertiary); cursor: not-allowed; }
+.nav-disabled:hover { background: none; color: var(--color-text-tertiary); }
 .nav-badge {
   font-size: 9px;
-  padding: 1px 5px;
-  background: #f1f5f9;
-  color: #94a3b8;
+  padding: 1px 6px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
   border-radius: 4px;
   font-weight: 600;
-  letter-spacing: 0.03em;
 }
-.nav-auth {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.nav-username { font-size: 0.8rem; color: #64748b; }
+.nav-auth { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nav-username { font-size: 0.8rem; color: var(--color-text-secondary); }
 .nav-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
   font-size: 0.8rem;
-  font-weight: 600;
-  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  font-family: var(--font-main);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s;
   border: none;
 }
-.nav-btn--primary { background: #3b6fd4; color: white; }
-.nav-btn--primary:hover { background: #2d5ab8; }
-.nav-btn--outline { background: white; color: #64748b; border: 1px solid #d0e2f5; }
-.nav-btn--outline:hover { background: #f1f5f9; }
+.nav-btn--primary { background: var(--color-primary); color: white; }
+.nav-btn--primary:hover { background: var(--color-primary-hover); }
+.nav-btn--outline {
+  background: white;
+  color: var(--color-text-secondary);
+  border: 0.5px solid var(--color-border-strong);
+}
+.nav-btn--outline:hover { background: var(--color-bg-secondary); }
 </style>

@@ -1,4 +1,5 @@
-// import './assets/main.css'
+import './assets/design-tokens.css'
+import 'pretendard/dist/web/static/pretendard.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
