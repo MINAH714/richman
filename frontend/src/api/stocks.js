@@ -56,6 +56,6 @@ export const deletePrediction = (id) =>
   axios.delete(`/api/stocks/predictions/${id}/`)
 
 
-// 대시보드용 관심 종목 + 현재가 한 번에 조회
-export const getStockDashboard = () =>
-  axios.get('/api/stocks/dashboard/')
+// tab: 'kr' (국내) 또는 'us' (미국)
+export const getStockDashboard = (tab = 'kr', offset = 0, count = 30) =>
+  axios.get('/api/stocks/dashboard/', { params: { tab, offset, count } })

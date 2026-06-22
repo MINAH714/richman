@@ -3,6 +3,7 @@ import requests
 from datetime import date, timedelta
 
 import yfinance as yf
+
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -474,46 +475,213 @@ def prediction_delete(request, pk):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# stocks/views.py 상단 import에 추가
+from yfinance.screener.screener import screen as yf_screen
+from yfinance.screener import EquityQuery
+
+
+# ── 국내 시가총액 상위 종목 (티커 고정 + 현재가 실시간) ──
+KOREAN_TOP_STOCKS = [
+    {'symbol': '005930.KS', 'name': '삼성전자',    'market': 'KRX'},
+    {'symbol': '000660.KS', 'name': 'SK하이닉스',  'market': 'KRX'},
+    {'symbol': '005490.KS', 'name': 'POSCO홀딩스', 'market': 'KRX'},
+    {'symbol': '005380.KS', 'name': '현대차',      'market': 'KRX'},
+    {'symbol': '035420.KS', 'name': 'NAVER',       'market': 'KRX'},
+    {'symbol': '000270.KS', 'name': '기아',        'market': 'KRX'},
+    {'symbol': '068270.KS', 'name': '셀트리온',    'market': 'KRX'},
+    {'symbol': '035720.KS', 'name': '카카오',      'market': 'KRX'},
+    {'symbol': '051910.KS', 'name': 'LG화학',      'market': 'KRX'},
+    {'symbol': '006400.KS', 'name': '삼성SDI',     'market': 'KRX'},
+    {'symbol': '207940.KS', 'name': '삼성바이오로직스', 'market': 'KRX'},
+    {'symbol': '005935.KS', 'name': '삼성전자우',  'market': 'KRX'},
+    {'symbol': '012330.KS', 'name': '현대모비스',  'market': 'KRX'},
+    {'symbol': '028260.KS', 'name': '삼성물산',    'market': 'KRX'},
+    {'symbol': '066570.KS', 'name': 'LG전자',      'market': 'KRX'},
+    {'symbol': '003550.KS', 'name': 'LG',          'market': 'KRX'},
+    {'symbol': '096770.KS', 'name': 'SK이노베이션', 'market': 'KRX'},
+    {'symbol': '017670.KS', 'name': 'SK텔레콤',    'market': 'KRX'},
+    {'symbol': '030200.KS', 'name': 'KT',          'market': 'KRX'},
+    {'symbol': '055550.KS', 'name': '신한지주',    'market': 'KRX'},
+    {'symbol': '105560.KS', 'name': 'KB금융',      'market': 'KRX'},
+    {'symbol': '086790.KS', 'name': '하나금융지주', 'market': 'KRX'},
+    {'symbol': '032830.KS', 'name': '삼성생명',    'market': 'KRX'},
+    {'symbol': '018260.KS', 'name': '삼성에스디에스', 'market': 'KRX'},
+    {'symbol': '034730.KS', 'name': 'SK',          'market': 'KRX'},
+    {'symbol': '011200.KS', 'name': 'HMM',         'market': 'KRX'},
+    {'symbol': '010130.KS', 'name': '고려아연',    'market': 'KRX'},
+    {'symbol': '000810.KS', 'name': '삼성화재',    'market': 'KRX'},
+    {'symbol': '009150.KS', 'name': '삼성전기',    'market': 'KRX'},
+    {'symbol': '024110.KS', 'name': '기업은행',    'market': 'KRX'},
+]
+
+
+def get_korean_stocks_with_price(offset=0, count=30):
+    """
+    국내 종목 현재가 일괄 조회
+    - offset: 시작 인덱스 (더보기용)
+    - count: 가져올 개수
+    """
+    # offset ~ offset+count 범위의 종목만 슬라이싱
+    target = KOREAN_TOP_STOCKS[offset: offset + count]
+    if not target:
+        return [], False   # (결과, has_more)
+
+    symbols = [s['symbol'] for s in target]
+    has_more = (offset + count) < len(KOREAN_TOP_STOCKS)
+
+    try:
+        tickers = yf.Tickers(' '.join(symbols))
+        result  = []
+        for stock in target:
+            sym = stock['symbol']
+            try:
+                info  = tickers.tickers[sym].fast_info
+                price = info.get('lastPrice') or info.get('last_price')
+                prev  = info.get('previousClose') or info.get('previous_close')
+
+                change_rate = None
+                change_type = 'EVEN'
+                if price and prev and prev != 0:
+                    change_rate = round(
+                        (float(price) - float(prev)) / float(prev) * 100, 2
+                    )
+                    change_type = (
+                        'RISE' if change_rate > 0
+                        else 'FALL' if change_rate < 0
+                        else 'EVEN'
+                    )
+
+                result.append({
+                    'symbol':        sym,
+                    'name':          stock['name'],
+                    'market':        stock['market'],
+                    'current_price': round(float(price), 2) if price else None,
+                    'change_rate':   change_rate,
+                    'change_type':   change_type,
+                })
+            except Exception:
+                result.append({
+                    'symbol':        sym,
+                    'name':          stock['name'],
+                    'market':        stock['market'],
+                    'current_price': None,
+                    'change_rate':   None,
+                    'change_type':   'EVEN',
+                })
+        return result, has_more
+
+    except Exception:
+        return [
+            {**s, 'current_price': None, 'change_rate': None, 'change_type': 'EVEN'}
+            for s in target
+        ], has_more
+
+
+def get_us_stocks_with_price(offset=0, count=25):
+    """
+    미국 시가총액 상위 종목 실시간 조회
+    - EquityQuery로 미국 지역 + 시가총액 상위 필터
+    - offset으로 페이지네이션
+    - BRK-A/BRK-B 같은 중복 회사 제거
+    """
+    try:
+        q = EquityQuery('and', [
+            EquityQuery('gt', ['intradaymarketcap', 100_000_000_000]),  # 시총 1000억$ 이상
+            EquityQuery('eq', ['region', 'us']),                        # 미국 지역만
+        ])
+        # offset + count 만큼 가져온 뒤 슬라이싱
+        fetch_count = offset + count + 5   # 중복 제거 여유분 +5
+        result_data = yf_screen(
+            q,
+            sortField='intradaymarketcap',
+            sortAsc=False,
+            count=fetch_count,
+        )
+        all_quotes = result_data.get('quotes', [])
+
+        # 중복 회사 제거 (같은 longName이면 하나만 유지)
+        seen_names = set()
+        deduped = []
+        for q_item in all_quotes:
+            name = q_item.get('longName') or q_item.get('shortName', '')
+            # 회사명 앞 2단어 기준으로 중복 체크 (예: "Berkshire Hathaway Inc." → "Berkshire Hathaway")
+            key = ' '.join(name.split()[:2]).lower()
+            if key not in seen_names:
+                seen_names.add(key)
+                deduped.append(q_item)
+
+        # offset ~ offset+count 슬라이싱
+        target   = deduped[offset: offset + count]
+        has_more = len(deduped) > offset + count
+
+        result = []
+        for item in target:
+            price       = item.get('regularMarketPrice')
+            change_rate = item.get('regularMarketChangePercent')
+            change_type = 'EVEN'
+            if change_rate is not None:
+                change_type = (
+                    'RISE' if change_rate > 0
+                    else 'FALL' if change_rate < 0
+                    else 'EVEN'
+                )
+                change_rate = round(change_rate, 2)
+
+            result.append({
+                'symbol':        item.get('symbol', ''),
+                'name':          item.get('longName') or item.get('shortName', ''),
+                'market':        item.get('exchange', 'US'),
+                'current_price': round(float(price), 2) if price else None,
+                'change_rate':   change_rate,
+                'change_type':   change_type,
+            })
+        return result, has_more
+
+    except Exception as e:
+        return [], False
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def stock_dashboard(request):
     """
     GET /api/stocks/dashboard/
+        ?tab=kr       → 국내 시가총액 상위
+        ?tab=us       → 미국 시가총액 상위 (실시간 스크리너)
+        ?offset=0     → 시작 위치 (더보기용, 기본값 0)
+        ?count=30     → 가져올 개수 (기본값 30)
 
-    관심 종목 목록 + 현재가를 한 번에 내려주는 대시보드 전용 API
-    - 10초마다 프론트에서 폴링하므로 가볍게 현재가만 반환
-    - 관심 종목이 없어도 빈 배열 반환 (에러 X)
+    응답:
+    {
+        "stocks":   [...],   // 종목 목록
+        "has_more": true,    // 더보기 가능 여부
+        "offset":   0,       // 현재 offset
+        "count":    30       // 요청한 count
+    }
     """
-    items = Watchlist.objects.filter(user=request.user)
-    result = []
+    tab    = request.query_params.get('tab', 'kr')
+    offset = int(request.query_params.get('offset', 0))
+    count  = int(request.query_params.get('count', 30))
 
-    for item in items:
-        current_price = get_current_price(item.symbol)
+    # 탭에 따라 데이터 조회
+    if tab == 'us':
+        stocks, has_more = get_us_stocks_with_price(offset=offset, count=count)
+    else:
+        stocks, has_more = get_korean_stocks_with_price(offset=offset, count=count)
 
-        # 포트폴리오가 있으면 수익률 계산
-        profit_rate = None
-        average_price = None
-        quantity = None
-        try:
-            portfolio = item.portfolio
-            average_price = float(portfolio.average_price)
-            quantity = float(portfolio.quantity)
-            if current_price and average_price:
-                profit_rate = round(
-                    (current_price - average_price) / average_price * 100, 2
-                )
-        except Exception:
-            pass
+    # 현재 유저의 관심 종목 심볼 목록
+    watched = set(
+        Watchlist.objects.filter(user=request.user)
+        .values_list('symbol', flat=True)
+    )
 
-        result.append({
-            'id':            item.id,
-            'symbol':        item.symbol,
-            'name':          item.name,
-            'market':        item.market,
-            'current_price': current_price,
-            'average_price': average_price,
-            'quantity':      quantity,
-            'profit_rate':   profit_rate,
-        })
+    # is_watched 필드 추가
+    for stock in stocks:
+        stock['is_watched'] = stock['symbol'] in watched
 
-    return Response(result)
+    return Response({
+        'stocks':   stocks,
+        'has_more': has_more,
+        'offset':   offset,
+        'count':    count,
+    })
