@@ -1,8 +1,6 @@
-<!-- frontend/src/views/HomeView.vue -->
 <template>
   <div class="home">
 
-    <!-- ── HERO ──────────────────────────────────────────── -->
     <section class="hero-section">
       <div class="section-inner hero-grid">
 
@@ -14,14 +12,14 @@
             AI가 맞춤 인사이트를 제공합니다
           </p>
           <div class="hero-btns">
-            <div class="btn btn-disabled">
-              <i class="ti ti-receipt-2" aria-hidden="true"></i> 소비 분석
-            </div>
-            <router-link to="/stocks/watchlist" class="btn btn-outline">
-              <i class="ti ti-chart-candle" aria-hidden="true"></i> 주식
+            <router-link to="/chat" class="btn btn-primary">
+              <i class="ti ti-robot" aria-hidden="true"></i> AI 비서 시작
             </router-link>
-            <router-link to="/crypto" class="btn btn-primary">
-              <i class="ti ti-coin" aria-hidden="true"></i> 크립토
+            <router-link to="/consumption" class="btn btn-outline">
+              <i class="ti ti-building-bank" aria-hidden="true"></i> 예적금
+            </router-link>
+            <router-link to="/stocks/watchlist" class="btn btn-outline">
+              <i class="ti ti-chart-candle" aria-hidden="true"></i> 주식/현물
             </router-link>
           </div>
         </div>
@@ -43,7 +41,6 @@
       </div>
     </section>
 
-    <!-- ── 실시간 시세 4칸 ──────────────────────────────── -->
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
@@ -70,43 +67,61 @@
             </p>
           </router-link>
 
-          <div class="metric-card metric-card--muted">
-            <p class="metric-label">이번달 소비</p>
-            <p class="metric-value">준비 중</p>
-            <p class="metric-rate flat">소비 분석 출시 예정</p>
-          </div>
+          <router-link to="/chat" class="metric-card">
+            <p class="metric-label">AI 금융 비서</p>
+            <p class="metric-value">포트폴리오 분석</p>
+            <p class="metric-rate up">지금 상담하기 →</p>
+          </router-link>
         </div>
       </div>
     </section>
 
-    <!-- ── 3버튼 기능 카드 ──────────────────────────────── -->
     <section class="feature-section">
       <div class="section-inner">
         <h2 class="section-title center">기능 바로가기</h2>
 
         <div class="feature-grid">
+          <router-link to="/consumption" class="feature-card">
+            <i class="ti ti-building-bank feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">예적금 랭킹</p>
+            <p class="feature-status">최고 금리 찾기</p>
+            <span class="feature-btn">둘러보기</span>
+          </router-link>
 
-          <div class="feature-card feature-card--soon">
-            <i class="ti ti-receipt-2 feature-icon" aria-hidden="true"></i>
-            <p class="feature-name">소비 분석</p>
-            <p class="feature-status feature-status--soon">준비 중</p>
-            <span class="feature-btn feature-btn--disabled">둘러보기</span>
-          </div>
+          <router-link to="/stocks/chart" class="feature-card">
+            <i class="ti ti-chart-line feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">주식 및 현물</p>
+            <p class="feature-status">실시간 시세 차트</p>
+            <span class="feature-btn">둘러보기</span>
+          </router-link>
 
-          <div class="feature-card feature-card--soon">
-            <i class="ti ti-chart-candle feature-icon" aria-hidden="true"></i>
-            <p class="feature-name">주식</p>
-            <p class="feature-status feature-status--soon">준비 중</p>
-            <router-link to="/stocks/watchlist" class="feature-btn">둘러보기</router-link>
-          </div>
+          <router-link to="/stocks/watchlist" class="feature-card">
+            <i class="ti ti-brand-youtube feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">관심 종목</p>
+            <p class="feature-status">유튜브 트렌드 분석</p>
+            <span class="feature-btn">둘러보기</span>
+          </router-link>
 
-          <router-link to="/crypto" class="feature-card feature-card--active">
-            <i class="ti ti-coin feature-icon feature-icon--active" aria-hidden="true"></i>
-            <p class="feature-name">크립토</p>
-            <p class="feature-status feature-status--live">사용 가능</p>
+          <router-link to="/crypto/buzz" class="feature-card feature-card--active">
+            <i class="ti ti-flame feature-icon feature-icon--active" aria-hidden="true"></i>
+            <p class="feature-name">크립토 버즈</p>
+            <p class="feature-status feature-status--live">실시간 감성분석</p>
             <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
+          <router-link to="/chat" class="feature-card">
+            <i class="ti ti-message-chatbot feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">AI 맞춤 추천</p>
+            <p class="feature-status">나만의 금융 비서</p>
+            <span class="feature-btn">둘러보기</span>
+          </router-link>
+
+          <router-link to="/insight" class="feature-card">
+            <i class="ti ti-map-pin feature-icon" aria-hidden="true"></i>
+            <p class="feature-name">주변 은행 검색</p>
+            <p class="feature-status">내 위치 기반 경로안내</p>
+            <span class="feature-btn">둘러보기</span>
+          </router-link>
         </div>
       </div>
     </section>
@@ -286,11 +301,6 @@ function changeClass(change) {
   border: 0.5px solid var(--color-border-strong);
 }
 .btn-outline:hover { background: var(--color-bg-secondary); }
-.btn-disabled {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
-}
 
 /* 히어로 그래프 카드 */
 .hero-graph-card {
@@ -335,8 +345,6 @@ function changeClass(change) {
   transition: background 0.15s;
 }
 .metric-card:hover { background: var(--color-primary-light); }
-.metric-card--muted { cursor: default; }
-.metric-card--muted:hover { background: var(--color-bg-secondary); }
 .metric-card.skeleton {
   height: 84px;
   background: linear-gradient(90deg, #eee 25%, #e0e0e0 50%, #eee 75%);
@@ -355,12 +363,12 @@ function changeClass(change) {
 .down { color: var(--color-down); }
 .flat { color: var(--color-text-tertiary); }
 
-/* ── 기능 카드 3개 ── */
+/* ── 기능 카드 확장 (F1301) ── */
 .feature-section { padding: 0 0 72px; }
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 명세서 반영을 위해 유동적 3열/2열 적용 */
+  gap: 16px;
 }
 .feature-card {
   background: var(--color-bg-card);
@@ -371,13 +379,13 @@ function changeClass(change) {
   text-decoration: none;
   color: inherit;
   display: block;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.15s;
 }
+.feature-card:hover { transform: translateY(-4px); border-color: var(--color-primary-light); }
 .feature-card--active {
   border: 2px solid var(--color-primary);
 }
 .feature-card--active:hover { border-color: var(--color-primary-hover); }
-.feature-card--soon { cursor: default; }
 
 .feature-icon {
   font-size: 28px;
@@ -388,9 +396,8 @@ function changeClass(change) {
 .feature-icon--active { color: var(--color-primary); }
 
 .feature-name { font-size: 1rem; font-weight: 600; margin: 0 0 6px; }
-.feature-status { font-size: 0.78rem; margin: 0 0 16px; }
+.feature-status { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0 0 16px; }
 .feature-status--live { color: var(--color-primary); font-weight: 500; }
-.feature-status--soon { color: var(--color-text-tertiary); }
 
 .feature-btn {
   display: inline-block;
@@ -400,15 +407,24 @@ function changeClass(change) {
   border: 0.5px solid var(--color-border-strong);
   color: var(--color-text-primary);
   text-decoration: none;
+  transition: background 0.15s;
 }
+.feature-btn:hover { background: var(--color-bg-secondary); }
 .feature-btn--primary {
   background: var(--color-primary);
   color: white;
   border: none;
   font-weight: 500;
 }
-.feature-btn--disabled {
-  color: var(--color-text-tertiary);
-  cursor: not-allowed;
+.feature-btn--primary:hover { background: var(--color-primary-hover); }
+
+/* 반응형 처리 */
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .preview-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .preview-grid { grid-template-columns: 1fr; }
+  .feature-grid { grid-template-columns: 1fr; }
 }
 </style>
