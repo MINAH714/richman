@@ -28,4 +28,6 @@ urlpatterns = [
     path("api/chat/", include("chatbot.urls")),
     path("api/finlife/", include("finlife.urls")),
     path('api/bankmap/', include('bankmap.urls')),
+    path('api/consumption/', include('consumption.urls')),
+    path('api/commodities/', include('commodities.urls')),
 ]

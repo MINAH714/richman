@@ -27,11 +27,20 @@
           </ul>
         </li>
 
-        <li>
-          <router-link to="/stocks/chart/AAPL" class="nav-item">
+        <li class="nav-item-dropdown">
+          <div class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
             주식/현물
-          </router-link>
+            <i class="ti ti-chevron-down arrow" aria-hidden="true"></i>
+          </div>
+          <ul class="dropdown-menu">
+            <li>
+              <router-link to="/stocks/chart/AAPL" class="dropdown-link">주식 시세표</router-link>
+            </li>
+            <li>
+              <router-link to="/commodities" class="dropdown-link">금/은 현물 시세</router-link>
+            </li>
+          </ul>
         </li>
 
         <li class="nav-item-dropdown">

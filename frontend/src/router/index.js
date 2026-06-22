@@ -124,6 +124,12 @@ const routes = [
     name: 'bank-map',
     component: () => import('@/views/BankMapView.vue'),
   },
+
+  {
+      path: '/commodities',
+      name: 'commodities',
+      component: () => import('@/views/CommoditiesView.vue'),
+    },
 ]
 
 const router = createRouter({
