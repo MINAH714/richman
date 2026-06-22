@@ -257,12 +257,13 @@ def stock_search(request):
     # 2글자 미만이면 검색하지 않음 (너무 많은 결과 방지)
     if len(query) < 2:
         return Response([])
-
+    print(f"검색어: {query}")  # 디버깅용 출력
     try:
         # yfinance의 Search 클래스로 종목 검색
         # max_results: 최대 몇 개까지 반환할지
         search = yf.Search(query, max_results=8)
         quotes = search.quotes  # 검색 결과 목록
+        print(quotes)  # 디버깅용 출력
 
         if not quotes:
             return Response([])

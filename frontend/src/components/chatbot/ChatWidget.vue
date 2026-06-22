@@ -1,48 +1,44 @@
-<!-- frontend/src/components/chatbot/ChatWidget.vue -->
 <template>
   <div class="chat-widget">
 
-    <!-- ── 플로팅 버튼 ─────────────────────────────────── -->
     <button
       class="chat-toggle-btn"
       @click="toggleChat"
       :class="{ open: isOpen }"
     >
-      <span v-if="!isOpen">💬</span>
-      <span v-else>✕</span>
+      <i v-if="!isOpen" class="ti ti-message-chatbot"></i>
+      <i v-else class="ti ti-x"></i>
     </button>
 
-    <!-- ── 채팅창 ──────────────────────────────────────── -->
     <transition name="chat-slide">
       <div v-if="isOpen" class="chat-window">
 
-        <!-- 헤더 -->
         <div class="chat-header">
           <div class="chat-header-info">
-            <span class="chat-avatar">🤖</span>
+            <div class="chat-avatar"><i class="ti ti-robot"></i></div>
             <div>
               <div class="chat-title">Richman AI</div>
-              <div class="chat-subtitle">crypto · stock · 소비 통합 어시스턴트</div>
+              <div class="chat-subtitle">통합 금융 어시스턴트</div>
             </div>
           </div>
-          <button class="chat-reset-btn" @click="resetChat" title="대화 초기화">🔄</button>
+          <button class="chat-reset-btn" @click="resetChat" title="대화 초기화">
+            <i class="ti ti-refresh"></i>
+          </button>
         </div>
 
-        <!-- 메시지 목록 -->
         <div class="chat-messages" ref="messagesEl">
-          <!-- 웰컴 메시지 -->
           <div v-if="chatStore.messages.length === 0" class="welcome-msg">
-            <p>안녕하세요! 💰</p>
+            <i class="ti ti-pig-money text-primary mb-2" style="font-size: 32px"></i>
+            <p class="font-bold">안녕하세요!</p>
             <p>저는 Richman AI 어시스턴트예요.</p>
             <div class="quick-btns">
-              <button @click="quickSend('비트코인 지금 얼마야?')">₿ BTC 시세</button>
-              <button @click="quickSend('이더리움 알려줘')">Ξ ETH 시세</button>
-              <button @click="quickSend('이번달 소비 어때?')">💸 소비 현황</button>
-              <button @click="quickSend('삼성전자 주가 어때?')">📈 주식 시세</button>
+              <button @click="quickSend('비트코인 지금 얼마야?')"><i class="ti ti-currency-bitcoin"></i> BTC 시세</button>
+              <button @click="quickSend('이더리움 알려줘')"><i class="ti ti-currency-ethereum"></i> ETH 시세</button>
+              <button @click="quickSend('이번달 소비 어때?')"><i class="ti ti-receipt"></i> 소비 현황</button>
+              <button @click="quickSend('삼성전자 주가 어때?')"><i class="ti ti-chart-line"></i> 주식 시세</button>
             </div>
           </div>
 
-          <!-- 메시지들 -->
           <div
             v-for="msg in chatStore.messages"
             :key="msg.id"
@@ -58,7 +54,6 @@
             </div>
           </div>
 
-          <!-- 로딩 -->
           <div v-if="chatStore.isLoading" class="msg-wrapper assistant">
             <div class="msg-bubble assistant loading">
               <span class="dot" /><span class="dot" /><span class="dot" />
@@ -66,7 +61,6 @@
           </div>
         </div>
 
-        <!-- 입력창 -->
         <div class="chat-input-area">
           <textarea
             v-model="inputText"
@@ -82,7 +76,7 @@
             @click="handleSend"
             :disabled="!inputText.trim() || chatStore.isLoading"
           >
-            ➤
+            <i class="ti ti-send"></i>
           </button>
         </div>
 
@@ -132,7 +126,7 @@ async function handleSend() {
 }
 
 function handleEnter(e) {
-  if (e.shiftKey) return  // Shift+Enter는 줄바꿈
+  if (e.shiftKey) return
   handleSend()
 }
 
@@ -176,81 +170,77 @@ function formatTime(isoString) {
 
 function intentLabel(intent) {
   const map = {
-    crypto: '₿',
-    stock: '📈',
-    consumption: '💸',
-    price_alert: '🔔',
-    mixed: '💬',
+    crypto: '크립토',
+    stock: '주식',
+    consumption: '소비',
+    price_alert: '알림',
+    mixed: '일반',
+    finlife: '예적금'
   }
   return map[intent] ?? ''
 }
 
-// 메시지 추가될 때마다 스크롤
 watch(() => chatStore.messages.length, scrollToBottom)
 </script>
 
 <style scoped>
-/* ── 플로팅 버튼 ───────────────────────────────────────── */
+/* ── 플로팅 버튼 ── */
 .chat-widget {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 9999;
+  font-family: var(--font-main);
 }
 
 .chat-toggle-btn {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--color-primary);
+  color: white;
   border: none;
   cursor: pointer;
-  font-size: 1.4rem;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+  font-size: 24px;
+  box-shadow: 0 4px 16px rgba(66, 184, 131, 0.4);
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.chat-toggle-btn:hover { background: #4f46e5; transform: scale(1.05); }
-.chat-toggle-btn.open { background: #6b7280; }
+.chat-toggle-btn:hover { background: var(--color-primary-hover); transform: scale(1.05); }
+.chat-toggle-btn.open { background: var(--color-text-secondary); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
 
-/* ── 채팅창 ────────────────────────────────────────────── */
+/* ── 채팅창 ── */
 .chat-window {
   position: absolute;
   bottom: 68px;
   right: 0;
   width: 360px;
   height: 520px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  font-family: 'IBM Plex Mono', monospace;
 }
 
 /* 헤더 */
 .chat-header {
-  background: #6366f1;
+  background: var(--color-primary);
   color: white;
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .chat-header-info { display: flex; align-items: center; gap: 10px; }
-.chat-avatar { font-size: 1.5rem; }
+.chat-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 .chat-title { font-weight: 600; font-size: 0.95rem; }
-.chat-subtitle { font-size: 0.7rem; opacity: 0.8; }
-.chat-reset-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  opacity: 0.8;
-}
+.chat-subtitle { font-size: 0.7rem; opacity: 0.9; }
+.chat-reset-btn { background: transparent; border: none; color: white; cursor: pointer; font-size: 18px; opacity: 0.8; transition: opacity 0.15s; }
 .chat-reset-btn:hover { opacity: 1; }
 
 /* 메시지 목록 */
@@ -260,153 +250,56 @@ watch(() => chatStore.messages.length, scrollToBottom)
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #f8faff;
+  gap: 12px;
+  background: var(--color-bg-secondary);
 }
 
 /* 웰컴 */
-.welcome-msg {
-  text-align: center;
-  color: #6b7280;
-  font-size: 0.85rem;
-  padding: 1rem 0;
-}
+.welcome-msg { text-align: center; color: var(--color-text-secondary); font-size: 0.85rem; padding: 24px 0; }
+.text-primary { color: var(--color-primary); }
+.mb-2 { margin-bottom: 8px; }
+.font-bold { font-weight: 600; color: var(--color-text-primary); font-size: 0.95rem; }
 .welcome-msg p { margin: 4px 0; }
-.quick-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: center;
-  margin-top: 12px;
-}
-.quick-btns button {
-  padding: 4px 10px;
-  background: white;
-  border: 1px solid #e2ecf9;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace;
-  transition: all 0.15s;
-}
-.quick-btns button:hover { background: #6366f1; color: white; border-color: #6366f1; }
+.quick-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+.quick-btns button { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; background: var(--color-bg-card); border: 0.5px solid var(--color-border-strong); border-radius: 20px; font-size: 0.75rem; color: var(--color-text-secondary); cursor: pointer; font-family: var(--font-main); transition: all 0.15s; }
+.quick-btns button:hover { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
 
 /* 메시지 버블 */
 .msg-wrapper { display: flex; }
 .msg-wrapper.user { justify-content: flex-end; }
 .msg-wrapper.assistant { justify-content: flex-start; }
 
-.msg-bubble {
-  max-width: 80%;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-}
-.msg-bubble.user {
-  background: #6366f1;
-  color: white;
-  border-bottom-right-radius: 4px;
-}
-.msg-bubble.assistant {
-  background: white;
-  color: #0f172a;
-  border: 1px solid #e2ecf9;
-  border-bottom-left-radius: 4px;
-}
+.msg-bubble { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 0.9rem; }
+.msg-bubble.user { background: var(--color-primary); color: white; border-bottom-right-radius: 4px; }
+.msg-bubble.assistant { background: var(--color-bg-card); color: var(--color-text-primary); border: 0.5px solid var(--color-border); border-bottom-left-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
-.msg-content {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.85rem;
-  line-height: 1.5;
-}
+.msg-content { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-main); font-size: 0.9rem; line-height: 1.5; }
 
-.msg-time {
-  font-size: 0.65rem;
-  opacity: 0.6;
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.msg-wrapper.user .msg-time { justify-content: flex-end; }
+.msg-time { font-size: 0.7rem; color: var(--color-text-tertiary); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+.msg-wrapper.user .msg-time { justify-content: flex-end; color: rgba(255,255,255,0.8); }
 
-.intent-badge {
-  font-size: 0.7rem;
-  opacity: 0.8;
-}
+.intent-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; background: var(--color-bg-page); color: var(--color-text-secondary); border-radius: 10px; border: 0.5px solid var(--color-border); }
+.msg-wrapper.user .intent-badge { background: rgba(0,0,0,0.1); color: white; border: none; }
 
-/* 로딩 점 */
-.loading {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 16px;
-}
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #6366f1;
-  animation: bounce 1.2s infinite;
-}
+/* 로딩 */
+.loading { display: flex; align-items: center; gap: 4px; padding: 14px 16px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-tertiary); animation: bounce 1.2s infinite; }
 .dot:nth-child(2) { animation-delay: 0.2s; }
 .dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce {
-  0%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-6px); }
-}
+@keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-4px); background: var(--color-primary); } }
 
 /* 입력창 */
-.chat-input-area {
-  padding: 12px;
-  border-top: 1px solid #e2ecf9;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  background: white;
-}
-.chat-input {
-  flex: 1;
-  border: 1px solid #e2ecf9;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  font-family: 'IBM Plex Mono', monospace;
-  resize: none;
-  outline: none;
-  line-height: 1.4;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.chat-input:focus { border-color: #6366f1; }
+.chat-input-area { padding: 12px; border-top: 0.5px solid var(--color-border); display: flex; gap: 8px; align-items: flex-end; background: var(--color-bg-card); }
+.chat-input { flex: 1; border: 0.5px solid var(--color-border-strong); border-radius: var(--radius-md); padding: 10px 12px; font-size: 0.9rem; font-family: var(--font-main); resize: none; outline: none; line-height: 1.4; max-height: 120px; overflow-y: auto; background: var(--color-bg-page); transition: border-color 0.15s; }
+.chat-input:focus { border-color: var(--color-primary); }
 
-.chat-send-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #6366f1;
-  border: none;
-  color: white;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.chat-send-btn:hover:not(:disabled) { background: #4f46e5; }
-.chat-send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+.chat-send-btn { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-primary); border: none; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+.chat-send-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.chat-send-btn:disabled { background: var(--color-text-tertiary); cursor: not-allowed; }
 
 /* 슬라이드 애니메이션 */
 .chat-slide-enter-active,
 .chat-slide-leave-active { transition: all 0.25s ease; }
 .chat-slide-enter-from,
-.chat-slide-leave-to {
-  opacity: 0;
-  transform: translateY(16px) scale(0.95);
-}
+.chat-slide-leave-to { opacity: 0; transform: translateY(16px) scale(0.95); }
 </style>
