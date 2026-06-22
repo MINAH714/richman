@@ -98,6 +98,13 @@ const routes = [
   name: 'chat',
   component: () => import('@/views/ChatPageView.vue'),
 },
+
+  {
+    path: '/mypage',
+    name: 'mypage',
+    component: () => import('@/views/MyPageView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

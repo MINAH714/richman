@@ -103,7 +103,6 @@ class InsightView(APIView):
         total_expense = 0
 
         for tx in expense_qs:
-            # 정산 완료된 건은 실제 본인 부담분만 반영
             if tx.is_settle_target and tx.is_settled and tx.settle_amount:
                 real_amount = tx.amount - tx.settle_amount
             else:
@@ -124,8 +123,14 @@ class InsightView(APIView):
                 'ratio':            ratio,
             })
 
-        fixed_qs    = Transaction.objects.filter(user=request.user, is_fixed=True) \
-                          .values('description', 'category', 'amount').distinct()
+        # 🎯 [여기만 수정하면 끝!] 고정 지출을 가져올 때도 선택된 연도와 월로 필터링을 꽉 묶어줍니다.
+        fixed_qs    = Transaction.objects.filter(
+                        user=request.user, 
+                        is_fixed=True,
+                        transacted_at__year=year,    # 연도 조건 추가
+                        transacted_at__month=month   # 월 조건 추가
+                      ).values('description', 'category', 'amount').distinct()
+                      
         fixed_list  = list(fixed_qs)
         fixed_total = sum(f['amount'] for f in fixed_list)
 
