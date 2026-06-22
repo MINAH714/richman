@@ -118,6 +118,12 @@ const routes = [
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
   },
+
+  {
+    path: '/bank-map',
+    name: 'bank-map',
+    component: () => import('@/views/BankMapView.vue'),
+  },
 ]
 
 const router = createRouter({
