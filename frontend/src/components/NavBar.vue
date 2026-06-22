@@ -8,30 +8,48 @@
       </router-link>
 
       <ul class="nav-menu">
-        <li>
-          <router-link to="/consumption" class="nav-item">
+        <li class="nav-item-dropdown">
+          <div class="nav-item">
             <i class="ti ti-building-bank" aria-hidden="true"></i>
-            예적금
-          </router-link>
+            예/적금
+            <i class="ti ti-chevron-down arrow" aria-hidden="true"></i>
+          </div>
+          <ul class="dropdown-menu">
+            <li>
+              <router-link to="/finlife" class="dropdown-link">예적금 목록</router-link>
+            </li>
+            <li>
+              <router-link to="/bank-map" class="dropdown-link">근처 은행 위치</router-link>
+            </li>
+            <li>
+              <router-link to="/youtube" class="dropdown-link">관심 영상 자료</router-link>
+            </li>
+          </ul>
         </li>
+
         <li>
-          <router-link to="/stocks/watchlist" class="nav-item">
+          <router-link to="/stocks/chart/AAPL" class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
             주식/현물
           </router-link>
         </li>
-        <li>
-          <router-link to="/crypto" class="nav-item">
+
+        <li class="nav-item-dropdown">
+          <div class="nav-item">
             <i class="ti ti-coin" aria-hidden="true"></i>
             크립토
-          </router-link>
+            <i class="ti ti-chevron-down arrow" aria-hidden="true"></i>
+          </div>
+          <ul class="dropdown-menu">
+            <li>
+              <router-link to="/crypto" class="dropdown-link">시세 대시보드</router-link>
+            </li>
+            <li>
+              <router-link to="/crypto/buzz" class="dropdown-link">크립토 Buzz</router-link>
+            </li>
+          </ul>
         </li>
-        <li>
-          <router-link to="/crypto/buzz" class="nav-item">
-            <i class="ti ti-flame" aria-hidden="true"></i>
-            Buzz
-          </router-link>
-        </li>
+
         <li>
           <router-link to="/chat" class="nav-item">
             <i class="ti ti-robot" aria-hidden="true"></i>
@@ -81,7 +99,6 @@ const router = useRouter()
 const dropdownOpen   = ref(false)
 const profileMenuRef = ref(null)
 
-// 닉네임이나 유저네임의 첫 글자를 프로필 아이콘으로 사용
 const initial = computed(() =>
   (authStore.user?.nickname || authStore.user?.username || '?')[0].toUpperCase()
 )
@@ -110,7 +127,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
   background: var(--color-bg-card, #ffffff);
   border-bottom: 0.5px solid var(--color-border, #e2e8f0);
   font-family: var(--font-main, sans-serif);
@@ -135,15 +152,18 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   flex-shrink: 0;
 }
 .nav-logo i { font-size: 20px; color: var(--color-primary, #42b883); }
+
+/* ── 메인 메뉴 및 드롭다운 ── */
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
   flex: 1;
 }
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -159,11 +179,77 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   white-space: nowrap;
 }
 .nav-item i { font-size: 18px; }
-.nav-item:hover { background: var(--color-bg-secondary, #f1f5f9); color: var(--color-text-primary, #1e293b); }
+.nav-item .arrow { font-size: 14px; margin-left: 2px; transition: transform 0.2s; }
+
+.nav-item:hover,
+.nav-item-dropdown:hover .nav-item {
+  background: var(--color-bg-secondary, #f1f5f9);
+  color: var(--color-text-primary, #1e293b);
+}
+
 .router-link-active.nav-item {
   background: var(--color-primary-light, #ecfdf5);
   color: var(--color-primary, #42b883);
 }
+
+/* Hover Dropdown */
+.nav-item-dropdown {
+  position: relative;
+}
+
+.nav-item-dropdown:hover .arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--color-bg-card, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  min-width: 150px;
+  padding: 8px 0;
+  list-style: none;
+  margin: 0;
+  
+  /* Hover 애니메이션 */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+  z-index: 200;
+}
+
+.nav-item-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(4px); /* 살짝 아래로 띄움 */
+}
+
+.dropdown-link {
+  display: block;
+  padding: 10px 16px;
+  color: var(--color-text-secondary, #64748b);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-link:hover {
+  background: var(--color-bg-secondary, #f1f5f9);
+  color: var(--color-primary, #42b883);
+}
+
+.router-link-exact-active.dropdown-link {
+  color: var(--color-primary, #42b883);
+  font-weight: 600;
+  background: var(--color-primary-light, #ecfdf5);
+}
+
+/* ── 인증 영역 ── */
 .nav-auth { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .nav-username { font-size: 0.85rem; color: var(--color-text-secondary, #64748b); font-weight: 600; }
 .nav-btn {
@@ -180,7 +266,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 .nav-btn--primary { background: var(--color-primary, #42b883); color: white; }
 .nav-btn--primary:hover { background: var(--color-primary-hover, #34d399); }
 
-/* 프로필 드롭다운 */
+/* 프로필 드롭다운 (기존 유지) */
 .profile-menu { position: relative; }
 .profile-trigger {
   display: flex;
@@ -211,11 +297,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   justify-content: center;
   flex-shrink: 0;
 }
-.dropdown-arrow {
-  font-size: 0.7rem;
-  color: var(--color-text-tertiary, #94a3b8);
-  transition: transform 0.15s;
-}
+.dropdown-arrow { font-size: 0.7rem; color: var(--color-text-tertiary, #94a3b8); transition: transform 0.15s; }
 .dropdown-arrow.open { transform: rotate(180deg); }
 
 .profile-dropdown {
@@ -252,19 +334,8 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 }
 .dropdown-item:hover { background: var(--color-bg-secondary, #f1f5f9); color: var(--color-primary, #42b883); }
 .dropdown-item--danger:hover { background: #fef2f2; color: #ef4444; }
-.dropdown-divider {
-  height: 0.5px;
-  background: var(--color-border, #e2e8f0);
-  margin: 4px 2px;
-}
+.dropdown-divider { height: 0.5px; background: var(--color-border, #e2e8f0); margin: 4px 2px; }
 
-.dropdown-fade-enter-active,
-.dropdown-fade-leave-active {
-  transition: opacity 0.15s, transform 0.15s;
-}
-.dropdown-fade-enter-from,
-.dropdown-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
+.dropdown-fade-enter-active, .dropdown-fade-leave-active { transition: opacity 0.15s, transform 0.15s; }
+.dropdown-fade-enter-from, .dropdown-fade-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>

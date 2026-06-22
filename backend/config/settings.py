@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'crypto',
     'stocks',
     'chatbot',
+    'finlife',
     
     'django.contrib.admin',
     'django.contrib.auth',
