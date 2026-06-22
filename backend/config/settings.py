@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'chatbot',
     'finlife',
     'bankmap',
+    'commodities',
     
     'django.contrib.admin',
     'django.contrib.auth',
