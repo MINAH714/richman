@@ -27,6 +27,7 @@
         <div class="settle-item__right">
           <span class="settle-item__amount">+{{ tx.settle_amount?.toLocaleString() }}원</span>
           <button class="btn-complete" @click="markComplete(tx)">받았어요</button>
+          <button class="btn-remove" @click="removeItem(tx)">✕</button>
         </div>
       </li>
     </ul>
@@ -44,7 +45,10 @@
             총 {{ tx.amount.toLocaleString() }}원 ÷ {{ tx.settle_people_count }}명
           </span>
         </div>
-        <span class="settle-item__amount">+{{ tx.settle_amount?.toLocaleString() }}원</span>
+        <div class="settle-item__right">
+          <span class="settle-item__amount">+{{ tx.settle_amount?.toLocaleString() }}원</span>
+          <button class="btn-remove" @click="removeItem(tx)">✕</button>
+        </div>
       </li>
     </ul>
     <p v-else class="settle-empty">완료된 정산이 없어요.</p>
@@ -53,7 +57,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getSettleDashboard, completeSettle } from '@/api/consumption'
+import { getSettleDashboard, completeSettle, removeSettle } from '@/api/consumption'
+
+const emit = defineEmits(['settle-completed'])
 
 const data = ref({ pending: { list: [], total: 0 }, settled: { list: [], total: 0 } })
 
@@ -67,6 +73,14 @@ onMounted(fetchDashboard)
 const markComplete = async (tx) => {
   await completeSettle(tx.id)
   await fetchDashboard()
+  emit('settle-completed')
+}
+
+const removeItem = async (tx) => {
+  if (!confirm(`"${tx.description}" 정산을 삭제할까요? 일반 지출로 되돌아갑니다.`)) return
+  await removeSettle(tx.id)
+  await fetchDashboard()
+  emit('settle-completed')   // 분석/캘린더도 같이 갱신 (완료 항목 삭제 시 전액 반영되어야 하므로)
 }
 
 const formatDate = (iso) => {
@@ -96,11 +110,18 @@ const formatDate = (iso) => {
 .settle-item__desc { font-size:.9rem; font-weight:500; color:#333; }
 .settle-item__date  { font-size:.72rem; color:#b0b8c4; background:#f4f6fa; padding:1px 6px; border-radius:4px; }
 .settle-item__meta { font-size:.75rem; color:#94a3b8; }
-.settle-item__right { display:flex; align-items:center; gap:.6rem; }
+.settle-item__right { display:flex; align-items:center; gap:.5rem; }
 .settle-item__amount { font-weight:700; color:#3b6fd4; }
 .btn-complete {
   font-size:.75rem; background:#3b6fd4; color:#fff; border:none;
   border-radius:6px; padding:5px 10px; cursor:pointer;
 }
+.btn-remove {
+  font-size:.8rem; background:#f1f5f9; color:#94a3b8; border:none;
+  border-radius:6px; width:24px; height:24px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition: background .15s, color .15s;
+}
+.btn-remove:hover { background:#fef2f2; color:#ef4444; }
 .settle-empty { font-size:.82rem; color:#94a3b8; padding:.5rem 0; }
 </style>

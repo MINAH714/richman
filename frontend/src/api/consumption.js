@@ -41,3 +41,6 @@ export const completeSettle = (txId) =>
 
 export const getSettleDashboard = () =>
   axios.get(`${BASE}/settle/dashboard/`, authHeader())
+
+export const removeSettle = (txId) =>
+  axios.delete(`${BASE}/transactions/${txId}/settle-remove/`, authHeader())

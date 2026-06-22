@@ -121,25 +121,26 @@ const confirmConvert = async () => {
     total.value += tx.amount
   }
   convertTarget.value = null
+  emit('settle-changed')
 }
 
 // 정산 대상 토글
 const toggleSettle = async (tx) => {
   const { data } = await toggleSettleTarget(tx.id)
   Object.assign(tx, data)
-  // 방금 정산 대상으로 켰으면 바로 인원수 입력 패널 오픈
   if (tx.is_settle_target) {
     settleTarget.value = tx
     peopleCount.value  = null
   }
+  // emit('settle-changed')  ← 제거! 여기서는 리마운트 발생시키지 않음
 }
 
-// 정산 금액 계산 확정
 const confirmSettleCalculate = async () => {
   const { data } = await calculateSettle(settleTarget.value.id, peopleCount.value)
   const tx = transactions.value.find(t => t.id === settleTarget.value.id)
   if (tx) Object.assign(tx, data)
   settleTarget.value = null
+  emit('settle-changed')   // 계산 완료 시점에만 emit
 }
 </script>
 
