@@ -21,5 +21,6 @@ urlpatterns = [
 
     path('predict/<str:symbol>/', views.predict_stock, name='predict-stock'),       
     path('predictions/', views.prediction_history, name='prediction-history'),      
-    path('predictions/<int:pk>/', views.prediction_delete, name='prediction-delete'), 
+    path('predictions/<int:pk>/', views.prediction_delete, name='prediction-delete'),
+    path('dashboard/', views.stock_dashboard, name='stock-dashboard'),
 ]

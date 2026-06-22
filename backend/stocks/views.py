@@ -472,3 +472,48 @@ def prediction_delete(request, pk):
         )
     prediction.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def stock_dashboard(request):
+    """
+    GET /api/stocks/dashboard/
+
+    관심 종목 목록 + 현재가를 한 번에 내려주는 대시보드 전용 API
+    - 10초마다 프론트에서 폴링하므로 가볍게 현재가만 반환
+    - 관심 종목이 없어도 빈 배열 반환 (에러 X)
+    """
+    items = Watchlist.objects.filter(user=request.user)
+    result = []
+
+    for item in items:
+        current_price = get_current_price(item.symbol)
+
+        # 포트폴리오가 있으면 수익률 계산
+        profit_rate = None
+        average_price = None
+        quantity = None
+        try:
+            portfolio = item.portfolio
+            average_price = float(portfolio.average_price)
+            quantity = float(portfolio.quantity)
+            if current_price and average_price:
+                profit_rate = round(
+                    (current_price - average_price) / average_price * 100, 2
+                )
+        except Exception:
+            pass
+
+        result.append({
+            'id':            item.id,
+            'symbol':        item.symbol,
+            'name':          item.name,
+            'market':        item.market,
+            'current_price': current_price,
+            'average_price': average_price,
+            'quantity':      quantity,
+            'profit_rate':   profit_rate,
+        })
+
+    return Response(result)

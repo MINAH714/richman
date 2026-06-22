@@ -54,3 +54,8 @@ export const getPredictionHistory = () =>
 // 예측 히스토리 단건 삭제
 export const deletePrediction = (id) =>
   axios.delete(`/api/stocks/predictions/${id}/`)
+
+
+// 대시보드용 관심 종목 + 현재가 한 번에 조회
+export const getStockDashboard = () =>
+  axios.get('/api/stocks/dashboard/')
