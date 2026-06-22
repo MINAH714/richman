@@ -9,13 +9,6 @@
 
       <ul class="nav-menu">
         <li>
-          <span class="nav-item nav-disabled" title="준비 중">
-            <i class="ti ti-receipt-2" aria-hidden="true"></i>
-            소비
-            <span class="nav-badge">준비중</span>
-          </span>
-        </li>
-        <li>
           <router-link to="/stocks/watchlist" class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
             주식
@@ -75,15 +68,27 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+
 const authStore = useAuthStore()
 const router = useRouter()
+
+const dropdownOpen   = ref(false)
+const profileMenuRef = ref(null)
+
+const initial = computed(() =>
+  (authStore.user?.nickname || authStore.user?.username || '?')[0]
+)
+
+function toggleDropdown() {
+  dropdownOpen.value = !dropdownOpen.value
+}
+
 function logout() {
   dropdownOpen.value = false
   authStore.logout()
   router.push('/')
 }
 
-// 바깥 클릭 시 드롭다운 닫기
 function handleOutsideClick(e) {
   if (profileMenuRef.value && !profileMenuRef.value.contains(e.target)) {
     dropdownOpen.value = false
@@ -152,18 +157,8 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
-.nav-disabled { color: var(--color-text-tertiary); cursor: not-allowed; }
-.nav-disabled:hover { background: none; color: var(--color-text-tertiary); }
-.nav-badge {
-  font-size: 9px;
-  padding: 1px 6px;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-tertiary);
-  border-radius: 4px;
-  font-weight: 600;
-}
 .nav-auth { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.nav-username { font-size: 0.8rem; color: var(--color-text-secondary); }
+.nav-username { font-size: 0.8rem; color: var(--color-text-secondary); font-weight: 600; }
 .nav-btn {
   padding: 7px 14px;
   border-radius: var(--radius-md);
@@ -177,10 +172,92 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 }
 .nav-btn--primary { background: var(--color-primary); color: white; }
 .nav-btn--primary:hover { background: var(--color-primary-hover); }
-.nav-btn--outline {
-  background: white;
-  color: var(--color-text-secondary);
-  border: 0.5px solid var(--color-border-strong);
+
+/* 프로필 드롭다운 */
+.profile-menu { position: relative; }
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 20px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
 }
-.nav-btn--outline:hover { background: var(--color-bg-secondary); }
+.profile-trigger:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+}
+.profile-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dropdown-arrow {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  transition: transform 0.15s;
+}
+.dropdown-arrow.open { transform: rotate(180deg); }
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 180px;
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+.dropdown-item:hover { background: var(--color-bg-secondary); color: var(--color-primary); }
+.dropdown-item--danger:hover { background: #fef2f2; color: #ef4444; }
+.dropdown-divider {
+  height: 0.5px;
+  background: var(--color-border);
+  margin: 4px 2px;
+}
+
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.15s, transform 0.15s;
+}
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
 </style>
