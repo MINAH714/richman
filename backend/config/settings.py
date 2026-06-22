@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'stocks',
     'chatbot',
     'finlife',
+    'bankmap',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -177,3 +178,5 @@ NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
 
 OPENAI_API_KEY = env('OPENAI_API_KEY')
 OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://api.gms.ssafy.io/v1')
+
+KAKAO_REST_API_KEY = os.environ.get('KAKAO_REST_API_KEY')
