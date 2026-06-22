@@ -1,4 +1,6 @@
-import axios from './axios'   // 기존에 있던 axios 인스턴스 (baseURL, JWT 헤더 등 설정됨)
+// src/api/stocks.js
+// 기존에 있던 공통 axios 인스턴스 (baseURL, JWT 헤더 인터셉터 등이 설정된 파일)
+import axios from './axios' 
 
 // ── 관심 종목 (Watchlist) ─────────────────────────────
 
@@ -30,7 +32,6 @@ export const upsertPortfolio = (watchlistId, payload) =>
 export const getStockPrice = (symbol) =>
   axios.get(`/api/stocks/price/${symbol}/`)
 
-
 // 차트 데이터 조회 (캔들 + 이동평균선 + 볼린저 밴드)
 // period 예시: '1mo', '3mo', '6mo', '1y'
 export const getStockChart = (symbol, period = '3mo') =>
@@ -39,8 +40,9 @@ export const getStockChart = (symbol, period = '3mo') =>
 // 종목 검색 자동완성
 // query 예시: 'apple', '삼성', 'AAPL'
 export const searchStocks = (query) => 
-  axios.get('/api/stocks/search/', {params: {q: query}})
+  axios.get('/api/stocks/search/', { params: { q: query } })
 
+// ── AI 예측 기능 ─────────────────────────────────────
 
 // 특정 종목 AI 예측 실행
 // symbol: 티커, name: 종목명
@@ -55,7 +57,10 @@ export const getPredictionHistory = () =>
 export const deletePrediction = (id) =>
   axios.delete(`/api/stocks/predictions/${id}/`)
 
-
-// tab: 'kr' (국내) 또는 'us' (미국)
-export const getStockDashboard = (tab = 'kr', offset = 0, count = 30) =>
-  axios.get('/api/stocks/dashboard/', { params: { tab, offset, count } })
+// ── 주식 대시보드 메인 ────────────────────────────────
+// 중복되던 import 문을 지우고, 최상단의 공통 axios 인스턴스를 바라보도록 단일화 수선 완료
+export const getStockDashboard = (tab, offset, count) => {
+  return axios.get('/api/stocks/dashboard/', {
+    params: { tab, offset, count }
+  })
+}

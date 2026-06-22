@@ -176,3 +176,31 @@ NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
 
 OPENAI_API_KEY = env('OPENAI_API_KEY')
 OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://api.gms.ssafy.io/v1')
+
+KIWOOM_API_BASE_URL = env('KIWOOM_API_BASE_URL', default='https://api.kiwoom.com')
+KIWOOM_APP_KEY = env('KIWOOM_APP_KEY', default='')
+KIWOOM_SECRET_KEY = env('KIWOOM_SECRET_KEY', default='')
+KIWOOM_TIMEOUT_SECONDS = env.int('KIWOOM_TIMEOUT_SECONDS', default=8)
+KIWOOM_DASHBOARD_ENDPOINT = env('KIWOOM_DASHBOARD_ENDPOINT', default='/api/dostk/rkinfo')
+KIWOOM_DASHBOARD_API_ID = env('KIWOOM_DASHBOARD_API_ID', default='ka10027')
+KIWOOM_DASHBOARD_BODY = env('KIWOOM_DASHBOARD_BODY', default='')
+STOCK_DASHBOARD_PAGE_SIZE = env.int('STOCK_DASHBOARD_PAGE_SIZE', default=50)
+STOCK_DASHBOARD_MAX_PAGE_SIZE = env.int('STOCK_DASHBOARD_MAX_PAGE_SIZE', default=100)
+
+
+# config/settings.py
+import os
+from pathlib import Path
+
+# ... 기존 설정 생략 ...
+
+KIWOOM_APP_KEY = os.environ.get('KIWOOM_APP_KEY')
+KIWOOM_APP_SECRET = os.environ.get('KIWOOM_APP_SECRET')
+
+# 토큰 캐싱을 위한 기본 캐시 설정 유무 확인 (SQLite 환경이므로 Local Memory Cache 권장)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}

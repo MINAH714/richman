@@ -4,11 +4,14 @@ from datetime import date, timedelta
 
 import yfinance as yf
 
+from django.core.cache import cache
 from django.conf import settings
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
+
 
 from .models import Watchlist, Portfolio, PredictionHistory
 from .serializers import (
@@ -16,6 +19,7 @@ from .serializers import (
     PortfolioSerializer,
     PredictionHistorySerializer,
 )
+from .services.dashboard import get_korean_dashboard_stocks
 
 
 def get_current_price(symbol):
@@ -645,43 +649,140 @@ def get_us_stocks_with_price(offset=0, count=25):
 @permission_classes([IsAuthenticated])
 def stock_dashboard(request):
     """
-    GET /api/stocks/dashboard/
-        ?tab=kr       → 국내 시가총액 상위
-        ?tab=us       → 미국 시가총액 상위 (실시간 스크리너)
-        ?offset=0     → 시작 위치 (더보기용, 기본값 0)
-        ?count=30     → 가져올 개수 (기본값 30)
-
-    응답:
-    {
-        "stocks":   [...],   // 종목 목록
-        "has_more": true,    // 더보기 가능 여부
-        "offset":   0,       // 현재 offset
-        "count":    30       // 요청한 count
-    }
+    안전 무결성 버전 대시보드 뷰
     """
-    tab    = request.query_params.get('tab', 'kr')
-    offset = int(request.query_params.get('offset', 0))
-    count  = int(request.query_params.get('count', 30))
+    tab = request.query_params.get('tab', 'kr')
+    source = 'yfinance'
+    
+    # settings에 값이 없을 때를 대비한 안전 가드레이르 적용
+    default_page_size = getattr(settings, 'STOCK_DASHBOARD_PAGE_SIZE', 30)
+    max_page_size = getattr(settings, 'STOCK_DASHBOARD_MAX_PAGE_SIZE', 100)
+
+    try:
+        offset = max(int(request.query_params.get('offset', 0)), 0)
+        count = max(int(request.query_params.get('count', default_page_size)), 1)
+    except ValueError:
+        return Response(
+            {'error': 'offset과 count는 숫자여야 합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    count = min(count, max_page_size)
 
     # 탭에 따라 데이터 조회
     if tab == 'us':
-        stocks, has_more = get_us_stocks_with_price(offset=offset, count=count)
+        # get_us_stocks_with_price 함수가 호출 가능한지 검증 후 실행
+        if 'get_us_stocks_with_price' in globals():
+            stocks, has_more = get_us_stocks_with_price(offset=offset, count=count)
+        else:
+            stocks, has_more = [], False
     else:
-        stocks, has_more = get_korean_stocks_with_price(offset=offset, count=count)
+        # 1. 키움증권 API 조회 시도
+        kiwoom_result = None
+        if 'get_kiwoom_dashboard_stocks' in globals():
+            try:
+                kiwoom_result = get_kiwoom_dashboard_stocks(offset=offset, count=count)
+            except Exception as e:
+                print(f"[Kiwoom Execution Error] {e}")
 
-    # 현재 유저의 관심 종목 심볼 목록
-    watched = set(
-        Watchlist.objects.filter(user=request.user)
-        .values_list('symbol', flat=True)
-    )
+        if kiwoom_result is not None:
+            stocks, has_more = kiwoom_result
+            source = 'kiwoom'
+        else:
+            # 2. 실패 시 기존 폴백 함수 실행 (존재 여부 확인)
+            if 'get_korean_dashboard_stocks' in globals():
+                try:
+                    stocks, has_more, source = get_korean_dashboard_stocks(offset=offset, count=count)
+                except Exception as e:
+                    print(f"[Fallback Base Error] {e}")
+                    stocks, has_more = [], False
+            else:
+                stocks, has_more = [], False
 
-    # is_watched 필드 추가
+    # 유저의 관심 종목 심볼 목록 필터링
+    try:
+        watched = set(
+            Watchlist.objects.filter(user=request.user)
+            .values_list('symbol', flat=True)
+        )
+    except Exception as e:
+        print(f"[Database Watchlist Error] {e}")
+        watched = set()
+
+    # 안전하게 결과 주입
     for stock in stocks:
-        stock['is_watched'] = stock['symbol'] in watched
+        if isinstance(stock, dict):
+            stock['is_watched'] = stock.get('symbol') in watched
 
     return Response({
         'stocks':   stocks,
         'has_more': has_more,
         'offset':   offset,
         'count':    count,
+        'source':   source,
     })
+
+
+# 키움증권 API 설정 상수
+KIWOOM_BASE_URL = "https://openapi.kiwoom.com"  # 실제 키움 개발 가이드의 실서버/테스트서버 URL로 확인 필요
+
+def get_kiwoom_access_token():
+    """
+    키움증권 OAuth2.0 Access Token 발급 및 캐싱 (유효기간 고려)
+    """
+    cache_key = "kiwoom_access_token"
+    token = cache.get(cache_key)
+    
+    if token:
+        return token
+
+    url = f"{KIWOOM_BASE_URL}/v1/auth/token"  # 키움 REST API 토큰 엔드포인트 예시
+    payload = {
+        "grant_type": "client_credentials",
+        "appkey": settings.KIWOOM_APP_KEY,
+        "appsecret": settings.KIWOOM_APP_SECRET
+    }
+    headers = {"content-type": "application/json"}
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_with == 200:
+            data = response.json()
+            access_token = data.get("access_token")
+            expires_in = data.get("expires_in", 3600)  # 기본 1시간 만료 기준
+            
+            # 만료 5분 전에 갱신하도록 캐시 타임 설정
+            cache.set(cache_key, access_token, expires_in - 300)
+            return access_token
+    except Exception as e:
+        print(f"Kiwoom Token Error: {e}")
+    
+    return None
+
+def get_kiwoom_market_cap_top30():
+    """
+    키움 API를 통해 국내 주식 시가총액 상위 30개 종목 정보 가져오기
+    """
+    token = get_kiwoom_access_token()
+    if not token:
+        return []
+
+    # 키움증권 시가총액 상위 혹은 전종목 조회 API 엔드포인트 및 TR 설정 필요
+    # 아래는 표준적인 REST 스크리너/랭킹 API 예시 구조입니다.
+    url = f"{KIWOOM_BASE_URL}/v1/ranking/market-cap" 
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "content-type": "application/json"
+    }
+    params = {
+        "market_code": "0", # 0: 전체, 1: 코스피, 2: 코스닥 등 (키움 명세 기준)
+        "count": 30
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            # 키움 응답 포맷에 맞춰 파싱 (예시: [{ 'mksc_shrn_iscd': '005930', 'hts_id_nm': '삼성전자', 'stck_prpr': '75000', ... }])
+            return response.json().get("output", [])
+    except Exception as e:
+        print(f"Kiwoom Market Cap Error: {e}")
+    return []

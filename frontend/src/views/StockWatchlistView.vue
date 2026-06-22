@@ -1,13 +1,10 @@
-<!-- src/views/StockWatchlistView.vue -->
 <template>
   <div class="dashboard">
 
-    <!-- ── 검색바 ───────────────────────────────────────── -->
     <div class="search-section">
       <StockSearchBar />
     </div>
 
-    <!-- ── 관심 종목 카드 섹션 ────────────────────────────── -->
     <section v-if="store.items.length > 0" class="favorites-section">
       <h2 class="section-title">⭐ 관심 종목</h2>
       <div class="fav-grid">
@@ -25,6 +22,12 @@
           <div class="fav-card-price">
             {{ item.current_price != null
                 ? item.current_price.toLocaleString('ko-KR')
+                : '로딩 중...' }}
+          </div>
+
+          <div class="fav-card-price">
+            {{ item.price != null
+                ? item.price.toLocaleString('ko-KR') + (store.activeTab === 'kr' ? '원' : '$')
                 : '로딩 중...' }}
           </div>
           <div
@@ -45,10 +48,8 @@
 
     <hr v-if="store.items.length > 0" class="divider" />
 
-    <!-- ── 대시보드 메인 ──────────────────────────────────── -->
     <section>
       <div class="toolbar">
-        <!-- 국내 / 미국 탭 버튼 -->
         <div class="tab-group">
           <button
             :class="['tab-btn', { active: store.activeTab === 'kr' }]"
@@ -60,26 +61,26 @@
           >🇺🇸 미국 주식</button>
         </div>
 
-        <!-- 자동 갱신 상태 표시 -->
         <div class="refresh-status">
           <span :class="['refresh-dot', { blink: store.isRefreshing }]"></span>
           <span class="refresh-label">10초마다 자동 갱신</span>
         </div>
       </div>
 
-      <!-- 로딩 중 -->
-      <div v-if="store.isLoading" class="loading">불러오는 중...</div>
+      <div v-if="store.isLoading && store.dashboardItems.length === 0" class="loading">
+        주식 데이터를 불러오는 중...
+      </div>
 
-      <!-- 종목 테이블 -->
       <table v-else class="coin-table">
         <thead>
           <tr>
             <th>종목명</th>
             <th>티커</th>
             <th>거래소</th>
-            <th>현재가</th>
-            <th>등락률</th>
-            <th>관심 종목</th>
+            <th class="text-right">현재가</th>
+            <th class="text-right">전일대비</th>
+            <th class="text-right">등락률</th>
+            <th class="text-center">관심 종목</th>
           </tr>
         </thead>
         <tbody>
@@ -96,16 +97,15 @@
             <td class="market-code">{{ item.symbol }}</td>
             <td class="market-code">{{ item.market }}</td>
             <td class="price">
-              {{ item.current_price != null
-                  ? item.current_price.toLocaleString('ko-KR')
-                  : '-' }}
+              {{ item.price != null ? item.price.toLocaleString('ko-KR') : '-' }}
             </td>
-            <td class="rate" :class="changeClass(item.change_type)">
-              {{ item.change_rate != null
-                  ? (item.change_rate >= 0 ? '+' : '') + item.change_rate + '%'
-                  : '-' }}
+            <td class="price" :class="changeClass(item.change)">
+              {{ item.change != null ? (item.change > 0 ? '+' : '') + item.change.toLocaleString('ko-KR') : '-' }}
             </td>
-            <td>
+            <td class="rate" :class="changeClass(item.change_rate)">
+              {{ item.change_rate != null ? (item.change_rate > 0 ? '+' : '') + item.change_rate + '%' : '-' }}
+            </td>
+            <td class="text-center">
               <button
                 :class="['star-btn', { active: item.is_watched }]"
                 @click.stop="store.toggleWatchlist(item)"
@@ -117,6 +117,7 @@
           </tr>
         </tbody>
       </table>
+
       <div class="load-more-wrap">
         <button
           v-if="store.hasMore"
@@ -132,7 +133,6 @@
       </div>
     </section>
 
-    <!-- 포트폴리오 모달 -->
     <PortfolioModal
       v-if="modalTarget"
       :watchlist-id="modalTarget.id"
@@ -182,17 +182,16 @@ function goToChart(symbol) {
   router.push({ name: 'stock-chart', params: { symbol } })
 }
 
-// ── 등락 클래스 ───────────────────────────────────────
-function changeClass(type) {
-  if (type === 'RISE') return 'up'
-  if (type === 'FALL') return 'down'
-  return 'flat'
+// ── 등락 클래스 (change 값을 기준으로 판별하도록 간소화) ──
+function changeClass(value) {
+  if (!value || value === 0) return 'flat'
+  return value > 0 ? 'up' : 'down'
 }
 
-// ── 폴링 시작/종료 ────────────────────────────────────
+// ── 라이프사이클: 폴링 제어 ────────────────────────────
 onMounted(async () => {
-  await store.fetchWatchlist()   // 관심 종목 카드용
-  store.startPolling()           // 대시보드 10초 폴링
+  await store.fetchWatchlist()   // 관심 종목 카드 상단 로드
+  await store.startPolling()     // 수정: 데이터 확보 전 공백 방지를 위한 대시보드 기동
 })
 
 onUnmounted(() => {
@@ -205,6 +204,10 @@ onUnmounted(() => {
 .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; }
 .divider { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }
 .search-section { margin-bottom: 1.5rem; }
+
+/* 정렬 헬퍼 클래스 */
+.text-right { text-align: right !important; }
+.text-center { text-align: center !important; }
 
 /* 관심 종목 카드 */
 .fav-grid {
@@ -259,7 +262,6 @@ onUnmounted(() => {
   background: #10b981;
   transition: background 0.2s;
 }
-/* 갱신 시 깜빡임 애니메이션 */
 .refresh-dot.blink {
   animation: blink-pulse 0.2s ease-in-out;
 }
@@ -281,7 +283,7 @@ onUnmounted(() => {
 .coin-row:hover { background: #f9fafb; }
 .coin-row td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #f3f4f6; }
 
-/* 갱신 시 행 깜빡임 */
+/* 갱신 피드백 애니메이션 */
 .coin-row.refreshing {
   animation: row-flash 0.2s ease-in-out;
 }
@@ -308,7 +310,8 @@ onUnmounted(() => {
 .star-btn.active { color: #f59e0b; }
 .star-btn:hover  { color: #f59e0b; }
 
-.loading { color: #9ca3af; padding: 2rem 0; text-align: center; }
+.loading { color: #9ca3af; padding: 4rem 0; text-align: center; font-size: 0.95rem; }
+
 /* 더보기 버튼 */
 .load-more-wrap {
   display: flex;
