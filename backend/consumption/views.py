@@ -10,6 +10,7 @@ import datetime
 from collections import defaultdict
 
 
+# consumption/views.py — CalendarMonthlyView 수정
 class CalendarMonthlyView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -33,8 +34,6 @@ class CalendarMonthlyView(APIView):
                 daily_totals[date_key] += tx.amount
 
         return Response({'year': year, 'month': month, 'daily_totals': dict(daily_totals)})
-
-
 class CalendarDayDetailView(APIView):
     """GET /api/consumption/calendar/2025-06-14/"""
     permission_classes = [IsAuthenticated]
@@ -273,3 +272,24 @@ class SettleDashboardView(APIView):
                 'total': settled_total,
             },
         })
+    
+class SettleRemoveView(APIView):
+    """DELETE /api/consumption/transactions/<pk>/settle-remove/
+       정산 대상에서 완전히 제외 (대기중/완료 무관하게 초기화)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            tx = Transaction.objects.get(pk=pk, user=request.user, is_settle_target=True)
+        except Transaction.DoesNotExist:
+            return Response({'error': '정산 대상이 아니거나 없는 내역입니다.'}, status=404)
+
+        tx.is_settle_target      = False
+        tx.is_settled             = False
+        tx.settle_people_count    = None
+        tx.settle_per_person      = None
+        tx.settle_amount          = None
+        tx.save()
+
+        return Response(TransactionSerializer(tx).data)

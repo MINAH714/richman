@@ -14,5 +14,6 @@ urlpatterns = [
     path('transactions/<int:pk>/settle-calculate/', views.SettleCalculateView.as_view()),
     path('transactions/<int:pk>/settle-complete/', views.SettleCompleteView.as_view()),
     path('settle/dashboard/', views.SettleDashboardView.as_view()),
+    path('transactions/<int:pk>/settle-remove/', views.SettleRemoveView.as_view()),
 ]
     
