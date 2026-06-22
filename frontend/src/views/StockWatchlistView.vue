@@ -20,16 +20,20 @@
           </div>
           <div class="fav-card-market">{{ item.symbol }} · {{ item.market }}</div>
           <div class="fav-card-price">
-            {{ item.current_price != null
-                ? item.current_price.toLocaleString('ko-KR')
-                : '로딩 중...' }}
+            {{
+              item.price != null
+                ? (
+                    item.market === 'KRX'
+                      ? item.price.toLocaleString('ko-KR') + '원'
+                      : '$' + item.price.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })
+                  )
+                : '로딩 중...'
+            }}
           </div>
 
-          <div class="fav-card-price">
-            {{ item.price != null
-                ? item.price.toLocaleString('ko-KR') + (store.activeTab === 'kr' ? '원' : '$')
-                : '로딩 중...' }}
-          </div>
           <div
             v-if="item.profit_rate != null"
             class="fav-card-rate"

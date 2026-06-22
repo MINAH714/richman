@@ -28,7 +28,7 @@
         </li>
 
         <li>
-          <router-link to="/stocks/chart/AAPL" class="nav-item">
+          <router-link to="/stocks/watchlist" class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
             주식/현물
           </router-link>

@@ -1,74 +1,143 @@
-<!-- src/views/StockChartView.vue -->
 <template>
-  <div class="chart-page">
+  <div class="detail-container">
 
-    <!-- 상단 헤더 -->
-    <div class="chart-header">
-      <button class="btn-back" @click="router.back()">← 뒤로</button>
-      <div>
-        <h1 class="chart-title">{{ symbol }}</h1>
-        <p class="chart-sub">기술적 지표 차트</p>
+    <header class="detail-header">
+      <button class="back-btn" @click="router.back()">← BACK</button>
+      <div class="coin-title">
+        <h1 class="market-id">{{ symbol }}</h1>
+        <span class="status-badge">LIVE</span>
       </div>
-      <!-- 관심 종목 추가 버튼 -->
       <button
-        class="btn-watchlist"
+        class="fav-btn"
         :class="{ active: isWatched }"
         @click="handleWatchlistToggle"
       >
-        {{ isWatched ? '★ 관심 종목' : '☆ 관심 종목 추가' }}
+        {{ isWatched ? '★ 관심 종목 해제' : '☆ 관심 종목 추가' }}
       </button>
+    </header>
+
+    <div class="content-grid">
+
+      <section class="chart-section">
+        
+        <div class="chart-toolbar">
+          <div class="period-tabs">
+            <button
+              v-for="p in periods"
+              :key="p.value"
+              :class="['tab', { active: selectedPeriod === p.value }]"
+              @click="changePeriod(p.value)"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+
+          <div class="indicator-toggles">
+            <label v-for="ind in indicators" :key="ind.key" class="toggle-label">
+              <input type="checkbox" v-model="ind.visible" />
+              <span :style="{ color: ind.color, fontWeight: ind.visible ? 'bold' : 'normal' }">
+                {{ ind.label }}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div v-if="isLoading" class="chart-placeholder">
+          <span>📡 차트 데이터를 불러오는 중...</span>
+        </div>
+        <div v-else-if="error" class="chart-placeholder error">
+          <span>⚠️ {{ error }}</span>
+        </div>
+
+        <template v-else-if="chartData">
+          <div class="chart-wrap">
+            <apexchart
+              type="candlestick"
+              height="420"
+              :options="candleOptions"
+              :series="candleSeries"
+            />
+          </div>
+
+          <div class="chart-wrap volume-wrap">
+            <apexchart
+              type="bar"
+              height="150"
+              :options="volumeOptions"
+              :series="volumeSeries"
+            />
+          </div>
+        </template>
+        
+        <p class="disclaimer">
+          ⚠️ 이 차트는 참고용 정보이며, 투자 권유가 아닙니다. 투자에는 항상 위험이 따릅니다.
+        </p>
+      </section>
+
+      <aside class="info-section">
+
+        <div class="info-card">
+          <h3>현재가 정보</h3>
+          <div v-if="isPriceLoading" class="info-loading">불러오는 중...</div>
+          <div v-else-if="stockPrice" class="price-info">
+            <div class="info-row">
+              <span class="info-label">현재가</span>
+              <span class="info-value price">{{ formatPrice(stockPrice.current_price) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">등락률</span>
+              <span class="info-value" :class="changeClass(stockPrice.change_rate)">
+                {{ formatRate(stockPrice.change_rate) }}
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">고가</span>
+              <span class="info-value up">{{ formatPrice(stockPrice.high_price) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">저가</span>
+              <span class="info-value down">{{ formatPrice(stockPrice.low_price) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">거래량(24h)</span>
+              <span class="info-value">{{ formatVolume(stockPrice.volume) }}</span>
+            </div>
+          </div>
+          <div v-else-if="latestCandle" class="price-info">
+             <div class="info-row">
+              <span class="info-label">현재가(종가)</span>
+              <span class="info-value price">{{ formatPrice(latestCandle.y[3]) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">고가</span>
+              <span class="info-value up">{{ formatPrice(latestCandle.y[1]) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">저가</span>
+              <span class="info-value down">{{ formatPrice(latestCandle.y[2]) }}</span>
+            </div>
+          </div>
+          <div v-else class="info-loading">데이터가 없습니다.</div>
+        </div>
+
+        <div class="info-card">
+          <h3>종목 정보</h3>
+          <div class="info-row">
+            <span class="info-label">마켓</span>
+            <span class="info-value">{{ stockPrice?.market || 'KRX' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">심볼</span>
+            <span class="info-value">{{ symbol }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">종목명</span>
+            <span class="info-value">{{ stockPrice?.name || symbol }}</span>
+          </div>
+        </div>
+
+      </aside>
     </div>
-
-    <!-- 기간 선택 탭 -->
-    <div class="period-tabs">
-      <button
-        v-for="p in periods"
-        :key="p.value"
-        :class="['tab', { active: selectedPeriod === p.value }]"
-        @click="changePeriod(p.value)"
-      >
-        {{ p.label }}
-      </button>
-    </div>
-
-    <!-- 지표 토글 체크박스 -->
-    <div class="indicator-toggles">
-      <label v-for="ind in indicators" :key="ind.key" class="toggle-label">
-        <input type="checkbox" v-model="ind.visible" />
-        <span :style="{ color: ind.color }">{{ ind.label }}</span>
-      </label>
-    </div>
-
-    <!-- 로딩 / 에러 / 차트 -->
-    <div v-if="isLoading" class="status-box">📡 차트 데이터를 불러오는 중...</div>
-    <div v-else-if="error" class="status-box error">⚠️ {{ error }}</div>
-
-    <template v-else-if="chartData">
-      <!-- 메인 캔들 + 이동평균 + 볼린저 밴드 차트 -->
-      <div class="chart-wrap">
-        <apexchart
-          type="candlestick"
-          height="420"
-          :options="candleOptions"
-          :series="candleSeries"
-        />
-      </div>
-
-      <!-- 거래량 차트 -->
-      <div class="chart-wrap">
-        <apexchart
-          type="bar"
-          height="150"
-          :options="volumeOptions"
-          :series="volumeSeries"
-        />
-      </div>
-    </template>
-
-    <!-- 투자 주의 문구 -->
-    <p class="disclaimer">
-      ⚠️ 이 차트는 참고용 정보이며, 투자 권유가 아닙니다. 투자에는 항상 위험이 따릅니다.
-    </p>
   </div>
 </template>
 
@@ -76,27 +145,28 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import VueApexCharts from 'vue3-apexcharts'
-import { getStockChart } from '@/api/stocks'
+// 💡 stocks API에서 가격을 가져오는 함수도 import 합니다 (구현되어 있다면)
+import { getStockChart, getStockPrice } from '@/api/stocks' 
 import { useWatchlistStore } from '@/stores/watchlist'
 
-// ApexCharts 컴포넌트를 'apexchart' 이름으로 등록
 const apexchart = VueApexCharts
-
 const route  = useRoute()
 const router = useRouter()
 const watchlistStore = useWatchlistStore()
 
-// URL 파라미터에서 종목 심볼 가져오기
-// 예: /stocks/chart/AAPL → symbol = 'AAPL'
 const symbol = route.params.symbol
 
-// ── 상태 ─────────────────────────────────────────────
-const chartData      = ref(null)   // 백엔드에서 받은 차트 원본 데이터
+// ── 차트 상태 ──
+const chartData      = ref(null)
 const isLoading      = ref(false)
 const error          = ref(null)
-const selectedPeriod = ref('3mo') // 현재 선택된 기간
+const selectedPeriod = ref('3mo')
 
-// ── 기간 탭 목록 ──────────────────────────────────────
+// ── 가격 패널 상태 ──
+const stockPrice     = ref(null)
+const isPriceLoading = ref(false)
+
+// ── 탭 & 지표 토글 설정 ──
 const periods = [
   { label: '1개월', value: '1mo' },
   { label: '3개월', value: '3mo' },
@@ -104,41 +174,36 @@ const periods = [
   { label: '1년',   value: '1y'  },
 ]
 
-// ── 지표 토글 목록 ────────────────────────────────────
-// visible을 reactive하게 관리 → 체크박스 on/off 시 차트 즉시 반영
 const indicators = ref([
-  { key: 'ma5',    label: 'MA5',       color: '#f59e0b', visible: true  },
-  { key: 'ma20',   label: 'MA20',      color: '#10b981', visible: true  },
-  { key: 'ma60',   label: 'MA60',      color: '#8b5cf6', visible: false },
-  { key: 'bb',     label: '볼린저밴드', color: '#94a3b8', visible: false },
+  { key: 'ma5',  label: 'MA5',  color: '#f59e0b', visible: true  },
+  { key: 'ma20', label: 'MA20', color: '#10b981', visible: true  },
+  { key: 'ma60', label: 'MA60', color: '#8b5cf6', visible: false },
+  { key: 'bb',   label: '볼린저밴드', color: '#94a3b8', visible: false },
 ])
 
-// ── 관심 종목 여부 ────────────────────────────────────
+// 관심 종목 연동
 const isWatched = computed(() =>
   watchlistStore.watchedSymbols.includes(symbol)
 )
 
 async function handleWatchlistToggle() {
   if (isWatched.value) {
-    // 이미 관심 종목이면 → 관심 종목 페이지로 이동
     router.push({ name: 'stock-watchlist' })
   } else {
-    // 아직 추가 안 됐으면 → 추가 요청
-    // name, market은 간단히 symbol로 채움 (검색 기능 연동 전 임시)
     await watchlistStore.addToWatchlist({
       symbol,
-      name:   symbol,
-      market: 'UNKNOWN',
+      name: stockPrice.value?.name || symbol,
+      market: stockPrice.value?.market || 'KRX',
     })
   }
 }
 
-// ── 차트 데이터 로드 ──────────────────────────────────
+// ── API 호출 로직 ──
 async function fetchChart() {
   isLoading.value = true
   error.value     = null
   try {
-    const res   = await getStockChart(symbol, selectedPeriod.value)
+    const res = await getStockChart(symbol, selectedPeriod.value)
     chartData.value = res.data
   } catch (err) {
     error.value = '차트 데이터를 불러오지 못했습니다.'
@@ -147,148 +212,115 @@ async function fetchChart() {
   }
 }
 
-function changePeriod(period) {
-  selectedPeriod.value = period
-  // selectedPeriod가 바뀌면 watch가 감지해서 자동으로 fetchChart 호출
+// 우측 사이드 패널용 현재가 정보 호출 (API가 있을 경우)
+async function fetchPriceInfo() {
+  isPriceLoading.value = true
+  try {
+    const res = await getStockPrice(symbol)
+    stockPrice.value = res.data
+  } catch (err) {
+    console.warn('현재가 정보를 가져오지 못했습니다. 차트 데이터로 대체합니다.')
+  } finally {
+    isPriceLoading.value = false
+  }
 }
 
-// selectedPeriod가 바뀔 때마다 차트 다시 로드
+function changePeriod(period) {
+  selectedPeriod.value = period
+}
 watch(selectedPeriod, fetchChart)
 
-// ── ApexCharts 시리즈(데이터) 계산 ───────────────────
-// computed로 만들면 chartData나 indicators가 바뀔 때 자동으로 재계산됨
+// 데이터가 없을 때 우측 패널에 표시할 최신 캔들 데이터 추출
+const latestCandle = computed(() => {
+  if (!chartData.value || !chartData.value.candle) return null
+  const candles = chartData.value.candle
+  return candles[candles.length - 1]
+})
 
+// ── 차트 데이터 시리즈 세팅 ──
 const candleSeries = computed(() => {
   if (!chartData.value) return []
-
   const series = [
-    // 캔들스틱 시리즈 (항상 표시)
-    {
-      name: '주가',
-      type: 'candlestick',
-      data: chartData.value.candle,
-    }
+    { name: '주가', type: 'candlestick', data: chartData.value.candle }
   ]
-
-  // 체크박스 상태에 따라 지표 시리즈 추가
   const ind = indicators.value
-
   if (ind.find(i => i.key === 'ma5')?.visible) {
     series.push({
       name: 'MA5', type: 'line',
-      data: chartData.value.dates.map((d, i) => ({
-        x: d, y: chartData.value.ma.ma5[i]
-      }))
+      data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.ma.ma5[i] }))
     })
   }
   if (ind.find(i => i.key === 'ma20')?.visible) {
     series.push({
       name: 'MA20', type: 'line',
-      data: chartData.value.dates.map((d, i) => ({
-        x: d, y: chartData.value.ma.ma20[i]
-      }))
+      data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.ma.ma20[i] }))
     })
   }
   if (ind.find(i => i.key === 'ma60')?.visible) {
     series.push({
       name: 'MA60', type: 'line',
-      data: chartData.value.dates.map((d, i) => ({
-        x: d, y: chartData.value.ma.ma60[i]
-      }))
+      data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.ma.ma60[i] }))
     })
   }
   if (ind.find(i => i.key === 'bb')?.visible) {
     series.push(
-      {
-        name: 'BB 상단', type: 'line',
-        data: chartData.value.dates.map((d, i) => ({
-          x: d, y: chartData.value.bollinger.upper[i]
-        }))
-      },
-      {
-        name: 'BB 중간', type: 'line',
-        data: chartData.value.dates.map((d, i) => ({
-          x: d, y: chartData.value.bollinger.mid[i]
-        }))
-      },
-      {
-        name: 'BB 하단', type: 'line',
-        data: chartData.value.dates.map((d, i) => ({
-          x: d, y: chartData.value.bollinger.lower[i]
-        }))
-      }
+      { name: 'BB 상단', type: 'line', data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.bollinger.upper[i] })) },
+      { name: 'BB 중간', type: 'line', data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.bollinger.mid[i] })) },
+      { name: 'BB 하단', type: 'line', data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.bollinger.lower[i] })) }
     )
   }
-
   return series
 })
 
-// ── ApexCharts 옵션(설정) ─────────────────────────────
+// ── 차트 옵션 세팅 ──
 const candleOptions = computed(() => ({
   chart: {
     id: 'candle-chart',
     type: 'candlestick',
     toolbar: { show: true },
     zoom: { enabled: true },
+    background: 'transparent',
   },
-  // 지표별 색상 지정
   colors: ['#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#94a3b8', '#94a3b8', '#94a3b8'],
-  stroke: {
-    width: [1, 2, 2, 2, 1, 1, 1],  // 캔들은 얇게, 이동평균선은 2px
-  },
+  stroke: { width: [1, 2, 2, 2, 1, 1, 1] },
   xaxis: {
     type: 'category',
-    labels: { rotate: -45, style: { fontSize: '11px' } },
+    labels: { rotate: -45, style: { fontFamily: 'IBM Plex Mono, monospace', fontSize: '11px' } },
   },
   yaxis: {
     tooltip: { enabled: true },
-    labels: {
-      // 숫자를 보기 좋게 포맷팅 (예: 150.12)
-      formatter: (val) => val != null ? val.toFixed(2) : '',
-    }
+    labels: { formatter: (val) => val != null ? val.toLocaleString('ko-KR') : '' }
   },
-  tooltip: {
-    shared: true,  // 여러 시리즈의 툴팁을 한 번에 표시
-    // 캔들스틱 툴팁 커스터마이징
-    custom: undefined,
-  },
+  tooltip: { shared: true, custom: undefined },
   plotOptions: {
     candlestick: {
-      colors: {
-        upward:   '#ef4444',  // 상승 캔들: 빨간색 (한국식)
-        downward: '#2563eb',  // 하락 캔들: 파란색 (한국식)
-      }
+      colors: { upward: '#ef4444', downward: '#3b82f6' }
     }
   },
-  legend: { show: true, position: 'top' },
+  legend: { show: false }, // 범례는 헤더 토글로 대체하므로 끔
+  grid: { borderColor: '#e2ecf9' },
 }))
 
-// 거래량 시리즈
 const volumeSeries = computed(() => {
   if (!chartData.value) return []
   return [{
     name: '거래량',
-    data: chartData.value.dates.map((d, i) => ({
-      x: d,
-      y: chartData.value.volume[i]
-    }))
+    data: chartData.value.dates.map((d, i) => ({ x: d, y: chartData.value.volume[i] }))
   }]
 })
 
-// 거래량 차트 옵션
 const volumeOptions = computed(() => ({
   chart: {
     id: 'volume-chart',
     type: 'bar',
     toolbar: { show: false },
-    // 메인 차트와 x축 동기화
     brush: { target: 'candle-chart', enabled: true },
+    background: 'transparent',
   },
   colors: ['#94a3b8'],
   xaxis: { type: 'category', labels: { show: false } },
   yaxis: {
     labels: {
-      // 거래량 단위 축약 (예: 1,200,000 → 1.2M)
       formatter: (val) => {
         if (val >= 1_000_000) return (val / 1_000_000).toFixed(1) + 'M'
         if (val >= 1_000)     return (val / 1_000).toFixed(0) + 'K'
@@ -298,74 +330,140 @@ const volumeOptions = computed(() => ({
   },
   dataLabels: { enabled: false },
   plotOptions: { bar: { columnWidth: '80%' } },
+  grid: { borderColor: '#e2ecf9' },
 }))
 
-// ── 마운트 시 초기 데이터 로드 ───────────────────────
+// ── 라이프사이클 ──
 onMounted(() => {
-  watchlistStore.fetchWatchlist()  // 관심 종목 여부 확인용
+  watchlistStore.fetchWatchlist()
   fetchChart()
+  fetchPriceInfo() // 패널 정보 API 호출
 })
+
+// ── 포맷 헬퍼 (Crypto 파일 참고) ──
+function formatPrice(price) {
+  if (price == null) return '-'
+  return price.toLocaleString('ko-KR') + ' 원'
+}
+function formatRate(rate) {
+  if (rate == null) return '-'
+  return (rate > 0 ? '+' : '') + rate.toFixed(2) + '%'
+}
+function formatVolume(vol) {
+  if (vol == null) return '-'
+  return vol.toLocaleString('ko-KR')
+}
+function changeClass(change) {
+  if (change > 0) return 'up'
+  if (change < 0) return 'down'
+  return 'flat'
+}
 </script>
 
 <style scoped>
-.chart-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 28px 20px;
+/* ── 글로벌 컨테이너 ── */
+.detail-container {
+  min-height: 100vh;
+  background: #f0f6ff;
+  color: #0f172a;
+  padding: 24px;
+  font-family: 'IBM Plex Mono', 'Pretendard', sans-serif;
 }
-.chart-header {
+
+/* ── 헤더 영역 ── */
+.detail-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 24px;
 }
-.btn-back {
-  padding: 8px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
+.back-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #d0e2f5;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-}
-.chart-title { font-size: 26px; font-weight: 700; margin: 0; }
-.chart-sub   { font-size: 13px; color: #888; margin: 2px 0 0; }
-.btn-watchlist {
-  margin-left: auto;
-  padding: 8px 18px;
-  border: 1px solid #2563eb;
-  border-radius: 8px;
-  background: #fff;
-  color: #2563eb;
-  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
   font-weight: 600;
+  transition: background 0.15s;
 }
-.btn-watchlist.active {
-  background: #2563eb;
-  color: #fff;
+.back-btn:hover { background: #e8f0fe; }
+.coin-title { display: flex; align-items: center; gap: 10px; flex: 1; }
+.market-id  { font-size: 1.5rem; font-weight: 800; margin: 0; }
+.status-badge {
+  padding: 3px 8px;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+.fav-btn {
+  padding: 8px 16px;
+  border: 1px solid #d0e2f5;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+.fav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+.fav-btn:hover  { opacity: 0.8; }
+
+/* ── 메인 그리드 레이아웃 ── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px; /* 좌측 차트, 우측 패널 */
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── 좌측 차트 섹션 ── */
+.chart-section {
+  background: white;
+  border: 1px solid #e2ecf9;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
 .period-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 14px;
 }
 .tab {
   padding: 6px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid #e2ecf9;
   border-radius: 99px;
-  background: #fff;
+  background: #f8fafc;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s;
 }
-.tab.active {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
-}
+.tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.tab:hover:not(.active) { background: #e2ecf9; }
+
 .indicator-toggles {
   display: flex;
   gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
 }
 .toggle-label {
   display: flex;
@@ -373,25 +471,73 @@ onMounted(() => {
   gap: 6px;
   font-size: 13px;
   cursor: pointer;
+  color: #475569;
 }
-.chart-wrap {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  margin-bottom: 16px;
+.toggle-label input { accent-color: #2563eb; }
+
+.chart-placeholder {
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-weight: 600;
 }
-.status-box {
-  text-align: center;
-  padding: 80px;
-  color: #aaa;
-  font-size: 15px;
-}
-.status-box.error { color: #ef4444; }
+.chart-placeholder.error { color: #ef4444; }
+
+.chart-wrap { margin-bottom: 10px; }
+.volume-wrap { margin-bottom: 0; }
 .disclaimer {
   font-size: 12px;
-  color: #aaa;
+  color: #94a3b8;
   margin-top: 24px;
   text-align: center;
+}
+
+/* ── 우측 정보 패널 섹션 ── */
+.info-section { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+}
+.info-card {
+  background: white;
+  border: 1px solid #e2ecf9;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.info-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #475569;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #f1f5f9;
+  font-size: 0.9rem;
+}
+.info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.info-label { color: #64748b; font-weight: 500; }
+.info-value { font-weight: 700; color: #1e293b; }
+.info-value.price { font-size: 1.1rem; }
+.info-loading { color: #94a3b8; font-size: 0.85rem; padding: 10px 0; text-align: center; }
+
+/* 증감 색상 (한국 주식/코인 기준) */
+.up   { color: #ef4444; } /* 상승 빨강 */
+.down { color: #3b82f6; } /* 하락 파랑 */
+.flat { color: #64748b; }
+
+/* ── 반응형 (모바일 등) ── */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr; /* 좁아지면 우측 패널이 차트 밑으로 내려감 */
+  }
 }
 </style>

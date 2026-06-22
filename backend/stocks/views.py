@@ -11,7 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+from concurrent.futures import ThreadPoolExecutor
 
 from .models import Watchlist, Portfolio, PredictionHistory
 from .serializers import (
@@ -35,33 +35,35 @@ def get_current_price(symbol):
     except Exception:
         return None
 
-
 # ────────────────────────────────────────────
-# 관심 종목 목록 조회 & 추가
+# 관심 종목 목록 조회 & 추가 (⚡ 멀티스레딩 최적화 적용)
 # ────────────────────────────────────────────
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])   # 로그인한 사용자만 접근 가능
 def watchlist_list(request):
     """
-    GET  /api/stocks/watchlist/  → 내 관심 종목 전체 조회
+    GET  /api/stocks/watchlist/  → 내 관심 종목 전체 조회 (병렬 처리로 속도 개선)
     POST /api/stocks/watchlist/  → 관심 종목 추가
     """
     if request.method == 'GET':
-        # 현재 로그인한 유저의 관심 종목만 가져옴
-        items = Watchlist.objects.filter(user=request.user)
-        result = []
-
-        for item in items:
-            # 종목마다 현재가를 yfinance로 조회
+        # DB에서 쿼리셋을 리스트로 미리 변환 (스레드 안전성 확보)
+        items = list(Watchlist.objects.filter(user=request.user))
+        
+        # 스레드 내부에서 실행될 단일 종목 처리 함수
+        def fetch_and_serialize(item):
             current_price = get_current_price(item.symbol)
-            # 수익률 계산을 위해 current_price를 context로 전달
             serializer = WatchlistSerializer(
                 item,
                 context={'current_price': current_price}
             )
             data = serializer.data
             data['current_price'] = current_price  # 현재가도 함께 응답
-            result.append(data)
+            return data
+
+        # 🔥 멀티스레딩 적용: 최대 10개씩 동시에 yfinance에 요청을 보냅니다.
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # executor.map을 쓰면 작업이 동시에 실행되면서도 순서는 원래대로 유지됩니다.
+            result = list(executor.map(fetch_and_serialize, items))
 
         return Response(result)
 
