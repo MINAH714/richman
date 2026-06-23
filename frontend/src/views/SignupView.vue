@@ -39,6 +39,13 @@
         </div>
 
         <div class="field-wrap">
+          <label class="field-label">나이</label>
+          <div class="input-wrap">
+            <input v-model.number="form.age" type="number" class="field-input" placeholder="나이를 입력하세요 (예: 28)" required :disabled="isLoading" min="1" />
+          </div>
+        </div>
+
+        <div class="field-wrap">
           <label class="field-label">비밀번호</label>
           <div class="input-wrap">
             <input v-model="form.password" type="password" class="field-input" placeholder="비밀번호" required :disabled="isLoading" />
@@ -71,7 +78,8 @@ import { useRouter } from 'vue-router'
 import axios from '@/api/axios'
 
 const router = useRouter()
-const form = ref({ username: '', name: '', nickname: '', password: '', passwordConfirm: '' })
+// 👉 form 상태에 age 추가
+const form = ref({ username: '', name: '', nickname: '', age: '', password: '', passwordConfirm: '' })
 const isLoading = ref(false)
 const errorMsg = ref('')
 
@@ -89,6 +97,7 @@ async function handleSignup() {
       username: form.value.username,
       name: form.value.name,
       nickname: form.value.nickname,
+      age: form.value.age, // 👉 요청에 age 포함
       password: form.value.password
     })
     alert('가입이 완료되었습니다! 로그인 페이지로 이동합니다.')
@@ -102,6 +111,7 @@ async function handleSignup() {
 </script>
 
 <style scoped>
+/* (기존 스타일 그대로 유지) */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&display=swap');
 
 .login-page { min-height: 100vh; background: linear-gradient(150deg, #eff6ff 0%, #f0f9ff 55%, #eef2ff 100%); display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; }
