@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'chatbot',
     'finlife',
     'bankmap',
-    'commodities',
+    # 'commodities',
     
     'django.contrib.admin',
     'django.contrib.auth',
@@ -207,3 +207,4 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
