@@ -178,7 +178,7 @@ NAVER_NEWS_CLIENT_ID = env('NAVER_NEWS_CLIENT_ID')
 NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
 
 OPENAI_API_KEY = env('OPENAI_API_KEY')
-OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://api.gms.ssafy.io/v1')
+OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://gms.ssafy.io/gmsapi/api.openai.com/v1')
 
 KIWOOM_API_BASE_URL = env('KIWOOM_API_BASE_URL', default='https://api.kiwoom.com')
 KIWOOM_APP_KEY = env('KIWOOM_APP_KEY', default='')

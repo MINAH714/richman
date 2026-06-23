@@ -13,6 +13,7 @@ from .services.chatbot import (
     handle_crypto_intent,
     handle_stock_intent,
     handle_consumption_intent,
+    handle_finlife_intent,
     handle_mixed_intent,
 )
 
@@ -62,7 +63,14 @@ class ChatMessageView(APIView):
         )
 
         # 2) Intent 분류
-        intent_result = classify_intent(user_content)
+        intent_result = classify_intent(
+            user_content,
+            session
+        )
+        print("===== INTENT RESULT =====")
+        print(intent_result)
+
+
         intent = intent_result.get("intent", "mixed")
         sub_data = intent_result.get("sub_data", {})
 
@@ -93,13 +101,16 @@ class ChatMessageView(APIView):
             result = {"answer": answer}
 
         elif intent == "stock":
-            result = handle_stock_intent(user_content, sub_data)
+            result = handle_stock_intent(user_content, sub_data, session)
 
         elif intent == "consumption":
-            result = handle_consumption_intent(user_content, sub_data)
+            result = handle_consumption_intent(user_content, sub_data, request.user)
+
+        elif intent == "finlife":
+            result = handle_finlife_intent(user_content, sub_data)
 
         else:
-            result = handle_mixed_intent(user_content)
+            result = handle_mixed_intent(user_content, request.user)
 
         # 4) 어시스턴트 메시지 저장
         assistant_msg = ChatMessage.objects.create(
