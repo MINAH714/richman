@@ -117,13 +117,18 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
-  // ── 404 (항상 가장 마지막에 위치해야 함) ────────────────
   {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: () => import('@/views/NotFoundView.vue'),
+    path: '/youtube',
+    name: 'youtube-search',
+    component: () => import('@/views/YoutubeSearchView.vue'),
   },
 
+  {
+    path: '/youtube/:videoId',
+    name: 'youtube-detail',
+    component: () => import('@/views/YoutubeDetailView.vue'),
+    props: true,
+  },
   {
     path: '/bank-map',
     name: 'bank-map',
@@ -135,6 +140,15 @@ const routes = [
   //     name: 'commodities',
   //     component: () => import('@/views/CommoditiesView.vue'),
   //   },
+  
+  // ── 404 (항상 가장 마지막에 위치해야 함) ────────────────
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/views/NotFoundView.vue'),
+  },
+
+  
 ]
 
 const router = createRouter({
