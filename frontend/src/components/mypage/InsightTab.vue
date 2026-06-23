@@ -1,7 +1,7 @@
 <!-- src/components/mypage/InsightTab.vue -->
 <template>
   <div class="insight-tab">
-    <p v-if="loading" class="loading">분석 중...</p>
+    <p v-if="loading" class="loading">불러오는 중</p>
 
     <div v-else class="insight-grid">
       <DonutChart :categories="data.categories" :total-expense="data.total_expense" />
@@ -21,7 +21,7 @@ const props = defineProps({
   month: { type: Number, required: true },
 })
 
-const emit = defineEmits(['data-loaded'])   // ← 고정지출 데이터를 부모에 전달용
+const emit = defineEmits(['data-loaded'])
 
 const data    = ref({ categories: [], total_expense: 0, fixed: { list: [], total: 0 } })
 const trend   = ref([])
@@ -36,14 +36,17 @@ const fetchAll = async () => {
   data.value  = insightRes.data
   trend.value = trendRes.data.trend
   loading.value = false
-  emit('data-loaded', data.value)   // 고정지출/total_expense를 부모로 전달
+  emit('data-loaded', data.value)
 }
 onMounted(fetchAll)
 watch(() => [props.year, props.month], fetchAll)
 </script>
 
 <style scoped>
-.insight-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-.loading       { text-align: center; padding: 3rem; color: #94a3b8; }
+.insight-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.loading       {
+  text-align: center; padding: 3rem; color: #4c4546;
+  font-family: 'Geist', sans-serif; font-size: .8rem; letter-spacing: .04em;
+}
 @media (max-width: 640px) { .insight-grid { grid-template-columns: 1fr; } }
 </style>

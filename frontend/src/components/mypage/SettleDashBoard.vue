@@ -1,4 +1,4 @@
-<!-- src/components/mypage/SettleDashboard.vue -->
+<!-- src/components/mypage/SettleDashBoard.vue -->
 <template>
   <div class="settle-dash">
     <div class="settle-summary">
@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <h4 class="settle-section-title">⏳ 정산 대기중</h4>
+    <h4 class="settle-section-title">정산 대기중</h4>
     <ul class="settle-list" v-if="data.pending?.list?.length">
       <li v-for="tx in data.pending.list" :key="tx.id" class="settle-item">
         <div class="settle-item__info">
@@ -33,7 +33,7 @@
     </ul>
     <p v-else class="settle-empty">정산 대기중인 항목이 없어요.</p>
 
-    <h4 class="settle-section-title">✅ 정산 완료</h4>
+    <h4 class="settle-section-title">정산 완료</h4>
     <ul class="settle-list" v-if="data.settled?.list?.length">
       <li v-for="tx in data.settled.list" :key="tx.id" class="settle-item settle-item--done">
         <div class="settle-item__info">
@@ -80,48 +80,67 @@ const removeItem = async (tx) => {
   if (!confirm(`"${tx.description}" 정산을 삭제할까요? 일반 지출로 되돌아갑니다.`)) return
   await removeSettle(tx.id)
   await fetchDashboard()
-  emit('settle-completed')   // 분석/캘린더도 같이 갱신 (완료 항목 삭제 시 전액 반영되어야 하므로)
+  emit('settle-completed')
 }
 
 const formatDate = (iso) => {
   const d = new Date(iso)
-  return `${d.getMonth() + 1}월 ${d.getDate()}일`
+  return `${d.getMonth() + 1}.${d.getDate()}`
 }
 </script>
 
 <style scoped>
-.settle-dash { background:#fff; border-radius:16px; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,.06); }
-.settle-summary { display:flex; gap:1rem; margin-bottom:1.5rem; }
-.summary-box { flex:1; background:#f8faff; border-radius:10px; padding:1rem; display:flex; flex-direction:column; gap:.3rem; }
-.summary-label { font-size:.78rem; color:#94a3b8; }
-.summary-amount { font-size:1.15rem; font-weight:700; }
-.summary-amount.pending { color:#f59e0b; }
-.summary-amount.done    { color:#16a34a; }
+.settle-dash { font-family: 'Inter', sans-serif; }
 
-.settle-section-title { font-size:.9rem; font-weight:700; margin:1.2rem 0 .6rem; color:#374151; }
-.settle-list { list-style:none; padding:0; margin:0; }
+.settle-summary { display: flex; gap: 1px; margin-bottom: 24px; background: #e1e3e4; border: 1px solid #e1e3e4; }
+.summary-box { flex: 1; background: #ffffff; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.summary-label {
+  font-family: 'Geist', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4c4546;
+}
+.summary-amount { font-family: 'Hanken Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; }
+.summary-amount.pending { color: #191c1d; }
+.summary-amount.done    { color: #0050cc; }
+
+.settle-section-title {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: #4c4546;
+  border-bottom: 1px solid #191c1d;
+  padding-bottom: 8px;
+}
+.settle-list { list-style: none; padding: 0; margin: 0; }
 .settle-item {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:.7rem 0; border-bottom:1px solid #f0f0f0;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #e1e3e4;
 }
-.settle-item--done { opacity:.6; }
-.settle-item__info { display:flex; flex-direction:column; gap:2px; }
-.settle-item__top   { display:flex; align-items:center; gap:.5rem; }
-.settle-item__desc { font-size:.9rem; font-weight:500; color:#333; }
-.settle-item__date  { font-size:.72rem; color:#b0b8c4; background:#f4f6fa; padding:1px 6px; border-radius:4px; }
-.settle-item__meta { font-size:.75rem; color:#94a3b8; }
-.settle-item__right { display:flex; align-items:center; gap:.5rem; }
-.settle-item__amount { font-weight:700; color:#3b6fd4; }
+.settle-item--done { opacity: .55; }
+.settle-item__info { display: flex; flex-direction: column; gap: 3px; }
+.settle-item__top   { display: flex; align-items: center; gap: 8px; }
+.settle-item__desc { font-size: .88rem; font-weight: 600; color: #191c1d; }
+.settle-item__date  { font-family: 'Geist', sans-serif; font-size: 10px; color: #4c4546; border: 1px solid #cfc4c5; padding: 1px 6px; }
+.settle-item__meta { font-size: .76rem; color: #4c4546; }
+.settle-item__right { display: flex; align-items: center; gap: 10px; }
+.settle-item__amount { font-family: 'Hanken Grotesk', sans-serif; font-weight: 700; color: #0050cc; }
 .btn-complete {
-  font-size:.75rem; background:#3b6fd4; color:#fff; border:none;
-  border-radius:6px; padding:5px 10px; cursor:pointer;
+  font-size: .76rem; background: #191c1d; color: #fff; border: none;
+  padding: 7px 12px; cursor: pointer; font-weight: 600; font-family: 'Inter', sans-serif;
+  transition: background .12s;
 }
+.btn-complete:hover { background: #0050cc; }
 .btn-remove {
-  font-size:.8rem; background:#f1f5f9; color:#94a3b8; border:none;
-  border-radius:6px; width:24px; height:24px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition: background .15s, color .15s;
+  font-size: .8rem; background: #ffffff; color: #4c4546; border: 1px solid #cfc4c5;
+  width: 26px; height: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .12s, color .12s;
 }
-.btn-remove:hover { background:#fef2f2; color:#ef4444; }
-.settle-empty { font-size:.82rem; color:#94a3b8; padding:.5rem 0; }
+.btn-remove:hover { border-color: #ba1a1a; color: #ba1a1a; }
+.settle-empty { font-size: .82rem; color: #4c4546; padding: 16px 0; }
 </style>

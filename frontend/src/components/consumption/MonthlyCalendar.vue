@@ -17,16 +17,10 @@
       >
         <span class="calendar__day">{{ day }}</span>
         <span v-if="totalOf(day) > 0" class="calendar__amount">
-          {{ totalOf(day).toLocaleString() }}원
+          {{ totalOf(day).toLocaleString() }}
         </span>
         <div v-if="totalOf(day) === 0 && isPast(day)" class="calendar__no-spend-center">
-          <svg viewBox="0 0 100 100" class="no-spend-icon">
-            <circle cx="50" cy="52" r="34" fill="#FBBF24" stroke="#D97706" stroke-width="2.5" />
-            <circle cx="50" cy="52" r="27" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="2.5 4" opacity="0.6" />
-            <text x="50" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#92400E">0</text>
-            <path d="M22 18 L25 26 L33 27 L27 33 L29 41 L22 36 L15 41 L17 33 L11 27 L19 26 Z" fill="#FCD34D" stroke="#D97706" stroke-width="1" />
-            <path d="M80 22 L82 28 L88 29 L83 33 L85 39 L80 35 L75 39 L77 33 L72 29 L78 28 Z" fill="#FCD34D" stroke="#D97706" stroke-width="1" />
-          </svg>
+          <span class="no-spend-mark">0</span>
         </div>
       </div>
     </div>
@@ -74,34 +68,72 @@ const isPast   = (day) =>
 </script>
 
 <style scoped>
-.calendar { max-width: 100%; margin: 0 auto; font-family: 'IBM Plex Mono', monospace; }
+.calendar { max-width: 100%; margin: 0 auto; font-family: 'Inter', sans-serif; }
 .calendar__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 1px;
+  background: #e1e3e4;
+  border: 1px solid #e1e3e4;
 }
-.calendar__dow  { text-align:center; font-size:.8rem; color:#888; padding:.4rem 0; }
-.calendar__cell {
-  min-height: 70px;
-  border: 1px solid #eee;
-  border-radius: 8px;
+.calendar__dow {
+  text-align: center;
+  font-family: 'Geist', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4c4546;
+  padding: 8px 0;
+  background: #ffffff;
+}
+.calendar__cell,
+.calendar__cell--empty {
+  min-height: 64px;
+  background: #ffffff;
   padding: 6px;
-  cursor: pointer;
-  transition: background .15s;
   position: relative;
   display: flex;
   flex-direction: column;
 }
-.calendar__cell:hover        { background: #f0f4ff; }
-.calendar__cell.is-today     { border-color: #6c63ff; border-width: 2px; }
-.calendar__cell.is-no-spend  { background: #fffbea; }
-.calendar__day    { font-size:.85rem; font-weight:600; }
-.calendar__amount { display:block; font-size:.75rem; color:#e05; margin-top:4px; }
+.calendar__cell { cursor: pointer; transition: background .12s; }
+.calendar__cell:hover { background: #f3f4f5; }
+.calendar__cell.is-today {
+  box-shadow: inset 0 0 0 2px #0050cc;
+}
+.calendar__cell.is-no-spend { background: #f8f9fa; }
+
+.calendar__day {
+  font-family: 'Geist', sans-serif;
+  font-size: .78rem;
+  font-weight: 500;
+  color: #191c1d;
+}
+.calendar__amount {
+  display: block;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: .76rem;
+  font-weight: 700;
+  color: #191c1d;
+  margin-top: 4px;
+}
+
 .calendar__no-spend-center {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.no-spend-icon { width: 36px; height: 36px; }
+.no-spend-mark {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #cfc4c5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #4c4546;
+}
 </style>

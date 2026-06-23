@@ -135,6 +135,29 @@ const routes = [
     component: () => import('@/views/BankMapView.vue'),
   },
 
+  {
+  path: '/board',
+  name: 'board-list',
+  component: () => import('@/views/BoardListView.vue'),
+},
+{
+  path: '/board/write',
+  name: 'board-write',
+  component: () => import('@/views/BoardWriteView.vue'),
+  meta: { requiresAuth: true },
+},
+{
+  path: '/board/:id/edit',
+  name: 'board-edit',
+  component: () => import('@/views/BoardWriteView.vue'),
+  meta: { requiresAuth: true },
+},
+{
+  path: '/board/:id',
+  name: 'board-detail',
+  component: () => import('@/views/BoardDetailView.vue'),
+},
+
   // {
   //     path: '/commodities',
   //     name: 'commodities',

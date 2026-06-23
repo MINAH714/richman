@@ -32,6 +32,11 @@ export const useAuthStore = defineStore('auth', {
       this.user = res.data
     },
 
+    async updateProfile(payload) {
+      const res = await api.patch('/api/accounts/me/', payload)
+      this.user = res.data
+    },
+
     setTokens(access, refresh) {
       this.access = access
       this.refresh = refresh

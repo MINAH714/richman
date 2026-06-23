@@ -122,14 +122,14 @@ class InsightView(APIView):
                 'ratio':            ratio,
             })
 
-        # 🎯 [여기만 수정하면 끝!] 고정 지출을 가져올 때도 선택된 연도와 월로 필터링을 꽉 묶어줍니다.
-        fixed_qs    = Transaction.objects.filter(
-                        user=request.user, 
-                        is_fixed=True,
-                        transacted_at__year=year,    # 연도 조건 추가
-                        transacted_at__month=month   # 월 조건 추가
-                      ).values('description', 'category', 'amount').distinct()
-                      
+        # 🔧 수정: 고정지출도 "선택된 월"만 조회 (year/month 필터 추가)
+        fixed_qs = Transaction.objects.filter(
+            user=request.user,
+            is_fixed=True,
+            transacted_at__year=year,
+            transacted_at__month=month,
+        ).values('description', 'category', 'amount')
+
         fixed_list  = list(fixed_qs)
         fixed_total = sum(f['amount'] for f in fixed_list)
 
