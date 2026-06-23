@@ -153,8 +153,17 @@ const login = async () => {
   isLoading.value = true
   try {
     await authStore.login(username.value, password.value)
+    
+    // 💡 수정: push('/') 대신 가드 로직을 다시 타도록 유도
+    // 만약 원래 가려던 곳이 있다면 거기로, 없다면 홈('/')으로 보냅니다.
     const redirect = route.query.redirect || '/'
-    router.push(redirect)
+    
+    // 강제로 이동하지 말고, 가드가 처리하도록 next 역할처럼 동작시킵니다.
+    await router.push(redirect)
+    
+    // 💡 중요: 이동 후, 혹시나 온보딩이 필요한 상태라면 
+    // router.beforeEach 가드가 알아서 온보딩 페이지로 낚아챌 것입니다.
+    
   } catch (e) {
     errorMsg.value = e.response?.status === 401
       ? '아이디 또는 비밀번호가 올바르지 않습니다.'
