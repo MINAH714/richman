@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
-from .serializers import UserProfileSerializer, SignupSerializer
+from .serializers import SignupSerializer, UserProfileSerializer, OnboardingSerializer
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -226,32 +226,28 @@ def kakao_login(request):
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
 def onboarding(request):
-    """
-    사용자 온보딩 설문 데이터를 저장하거나 조회합니다.
-    """
     if request.method == 'POST':
-        # 👉 1. 온보딩 넘어올 때 age가 있으면 User 테이블 업데이트 (소셜로그인 방어)
         age = request.data.get('age')
         if age:
             request.user.age = age
             request.user.save()
 
         profile, created = UserProfile.objects.get_or_create(user=request.user)
-        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
-        
+        serializer = OnboardingSerializer(profile, data=request.data, partial=True)   # ← 변경
+
         if serializer.is_valid():
             serializer.save(is_onboarded=True)
             return Response({
                 "message": "온보딩이 완료되었습니다.",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
-            
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'GET':
         try:
             profile = request.user.profile
-            serializer = UserProfileSerializer(profile)
+            serializer = OnboardingSerializer(profile)   # ← 변경
             return Response(serializer.data, status=status.HTTP_200_OK)
         except UserProfile.DoesNotExist:
             return Response({"is_onboarded": False}, status=status.HTTP_200_OK)

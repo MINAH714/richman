@@ -14,19 +14,22 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(username, password) {
-      const res = await api.post('/api/token/', {
-        username,
-        password,
-      })
-
+      const res = await api.post('/api/token/', { username, password })
       this.access = res.data.access
       this.refresh = res.data.refresh
-
       localStorage.setItem('access', res.data.access)
       localStorage.setItem('refresh', res.data.refresh)
-      await this.fetchProfile()
-    },
 
+      await this.fetchProfile()
+
+      // 온보딩 상태 동기화
+      try {
+        const onboardRes = await api.get('/api/accounts/onboarding/')
+        localStorage.setItem('is_onboarded', String(onboardRes.data.is_onboarded))
+      } catch {
+        localStorage.setItem('is_onboarded', 'false')
+      }
+    },
     async fetchProfile() {
       const res = await api.get('/api/accounts/me/')
       this.user = res.data
