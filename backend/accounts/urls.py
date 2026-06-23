@@ -7,8 +7,11 @@ from .views import (
     MyProfileView, 
     google_login, 
     naver_callback, 
-    kakao_login
+    kakao_login,
+    onboarding  
 )
+
+app_name = 'accounts'  # 앱 네임스페이스 추가 (권장)
 
 urlpatterns = [
     path('test/', TestView.as_view(), name='test'),
@@ -18,10 +21,13 @@ urlpatterns = [
     
     # 내 정보 조회 (중복 주소 해결)
     path('me/', MeView.as_view(), name='me'),
-    path('profile/', MyProfileView.as_view(), name='profile'), # 👉 'me/' 대신 'profile/'로 수정!
+    path('profile/', MyProfileView.as_view(), name='profile'),
     
     # 소셜 로그인
     path('google/login/', google_login, name='google_login'),
     path('naver/callback/', naver_callback, name='naver_callback'),
     path('kakao/login/', kakao_login, name='kakao_login'),
+    
+    # 온보딩 (설문 데이터 저장 및 조회) 
+    path('onboarding/', onboarding, name='onboarding'),
 ]

@@ -1,9 +1,7 @@
 from django.shortcuts import render, redirect as django_redirect
-
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .serializers import SignupSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from .serializers import UserProfileSerializer, SignupSerializer
@@ -14,6 +12,8 @@ from django.conf import settings
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
+# UserProfile 모델 임포트 (온보딩 처리에 필요)
+from .models import UserProfile 
 
 
 class TestView(APIView):
@@ -42,11 +42,10 @@ class MeView(APIView):
 
         return Response({
             'username': user.username,
-            'nickname': user.nickname,
+            'nickname': getattr(user, 'nickname', ''), # Custom User 모델에 nickname이 없을 경우를 대비한 안전한 호출
         })
     
 
-    
 class MyProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -205,18 +204,54 @@ def kakao_login(request):
     email = kakao_account.get('email', f'{kakao_id}@kakao.com')  # 이메일 비동의 시 대체값
     nickname = kakao_account.get('profile', {}).get('nickname', '')
 
-    # Step 3. User 생성 또는 조회 (Google과 동일 패턴)
+    # Step 3. User 생성 또는 조회
     user, created = User.objects.get_or_create(
         email=email,
         defaults={
             'username': f'kakao_{kakao_id}',
-            'nickname': nickname,        # Custom User 모델 필드에 맞게 조정
+            'nickname': nickname,        
         }
     )
 
-    # Step 4. JWT 발급 (Google과 완전히 동일)
+    # Step 4. JWT 발급 
     refresh = RefreshToken.for_user(user)
     return Response({
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     })
+
+# =====================================================================
+# 추가된 도메인 A: 온보딩 API
+# =====================================================================
+@api_view(['POST', 'GET'])
+@permission_classes([IsAuthenticated])
+def onboarding(request):
+    """
+    사용자 온보딩 설문 데이터를 저장하거나 조회합니다.
+    """
+    if request.method == 'POST':
+        # 👉 1. 온보딩 넘어올 때 age가 있으면 User 테이블 업데이트 (소셜로그인 방어)
+        age = request.data.get('age')
+        if age:
+            request.user.age = age
+            request.user.save()
+
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save(is_onboarded=True)
+            return Response({
+                "message": "온보딩이 완료되었습니다.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'GET':
+        try:
+            profile = request.user.profile
+            serializer = UserProfileSerializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({"is_onboarded": False}, status=status.HTTP_200_OK)
