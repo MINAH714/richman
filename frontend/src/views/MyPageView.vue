@@ -3,57 +3,34 @@
   <div class="mypage">
     <div class="mypage-inner">
 
+      <!-- 좌측 사이드바 -->
       <aside class="mypage-side">
-        <ProfileTab />
-      </aside>
-
-      <main class="mypage-content">
-
-        <div class="month-switcher">
-          <button @click="prevMonth">◀</button>
-          <h2>{{ year }}년 {{ month }}월</h2>
-          <button @click="nextMonth">▶</button>
+        <div class="side-profile">
+          <div class="side-avatar">{{ initial }}</div>
+          <p class="side-name">{{ authStore.user?.nickname || authStore.user?.username || '...' }}</p>
         </div>
 
-        <!-- 1행: 캘린더 + 분석 가로 배치 -->
-        <section class="mypage-section section-calendar">
-          <h3 class="section-title">📅 소비 캘린더</h3>
-          <CalendarTab
-            :key="`cal-${refreshKey}`"
-            :year="year"
-            :month="month"
-            @settle-changed="triggerRefresh"
-          />
-        </section>
+        <nav class="side-menu">
+          <button
+            v-for="item in MENU"
+            :key="item.key"
+            class="side-menu__item"
+            :class="{ active: activeTab === item.key }"
+            @click="activeTab = item.key"
+          >
+            <span class="side-menu__label">{{ item.label }}</span>
+          </button>
+        </nav>
 
-        <section class="mypage-section section-insight">
-          <h3 class="section-title">📊 소비 분석</h3>
-          <InsightTab
-            :key="`ins-${refreshKey}`"
-            :year="year"
-            :month="month"
-            @data-loaded="onInsightLoaded"
-          />
-        </section>
+        <button class="side-logout" @click="logout">로그아웃</button>
+      </aside>
 
-        <!-- 2행: 고정지출 (전체 너비) -->
-        <section class="mypage-section section-fixed">
-          <h3 class="section-title">📌 고정 지출</h3>
-          <FixedExpenseList
-            :list="insightData.fixed?.list"
-            :total="insightData.fixed?.total"
-            :total-expense="insightData.total_expense"
-          />
-        </section>
+      <!-- 우측 콘텐츠 -->
+      <main class="mypage-content">
 
-        <!-- 3행: 정산 (전체 너비) -->
-        <section class="mypage-section section-settle">
-          <h3 class="section-title">🤝 정산</h3>
-          <SettleDashBoard
-            :key="`settle-${refreshKey}`"
-            @settle-completed="triggerRefresh"
-          />
-        </section>
+        <SpendingTab v-if="activeTab === 'spending'" />
+        <PortfolioTab v-else-if="activeTab === 'portfolio'" />
+        <EditProfileTab v-else-if="activeTab === 'profile'" />
 
       </main>
     </div>
@@ -61,75 +38,149 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import ProfileTab       from '@/components/mypage/ProfileTab.vue'
-import CalendarTab      from '@/components/mypage/CalendarTab.vue'
-import InsightTab       from '@/components/mypage/InsightTab.vue'
-import SettleDashBoard  from '@/components/mypage/SettleDashBoard.vue'
-import FixedExpenseList from '@/components/consumption/FixedExpenseList.vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import SpendingTab    from '@/components/mypage/SpendingTab.vue'
+import PortfolioTab   from '@/components/mypage/PortfolioTab.vue'
+import EditProfileTab from '@/components/mypage/EditProfileTab.vue'
 
-const today = new Date()
-const year  = ref(today.getFullYear())
-const month = ref(today.getMonth() + 1)
+const authStore = useAuthStore()
+const router    = useRouter()
 
-const refreshKey  = ref(0)
-const insightData = ref({ fixed: { list: [], total: 0 }, total_expense: 0 })
+const MENU = [
+  { key: 'spending',  label: '소비 분석' },
+  { key: 'portfolio', label: '포트폴리오' },
+  { key: 'profile',   label: '프로필 수정' },
+]
+const activeTab = ref('spending')
 
-const triggerRefresh = () => {
-  refreshKey.value++
+onMounted(() => {
+  if (!authStore.user) authStore.fetchProfile()
+})
+
+const initial = computed(() =>
+  (authStore.user?.nickname || authStore.user?.username || '?')[0]
+)
+
+function logout() {
+  authStore.logout()
+  router.push('/')
 }
-
-const onInsightLoaded = (data) => {
-  insightData.value = data
-}
-
-const prevMonth = () => { if (month.value === 1) { year.value--; month.value = 12 } else month.value-- }
-const nextMonth = () => { if (month.value === 12) { year.value++; month.value = 1 } else month.value++ }
 </script>
 
 <style scoped>
-.mypage       { background: #f0f6ff; min-height: calc(100vh - 56px); padding: 32px 24px; font-family: 'IBM Plex Mono', monospace; }
-.mypage-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr; gap: 24px; }
-
-.mypage-content {
+.mypage {
+  background: #f8f9fa;
+  min-height: calc(100vh - 56px);
+  padding: 48px 24px;
+  font-family: 'Inter', sans-serif;
+  color: #191c1d;
+}
+.mypage-inner {
+  max-width: 1200px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: 240px 1fr;
+  gap: 32px;
 }
 
-.month-switcher {
-  grid-column: 1 / -1;
-  display: flex; justify-content: center; align-items: center; gap: 1rem;
-  margin-bottom: 0.5rem;
+/* ── 좌측 사이드바 ── */
+.mypage-side {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.month-switcher h2 { font-size: 1.15rem; font-weight: 700; color: #0f172a; }
-.month-switcher button {
-  background: white; border: 1px solid #e2ecf9; border-radius: 8px;
-  width: 32px; height: 32px; cursor: pointer; font-size: .9rem;
+.side-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px 20px;
+  border-bottom: 1px solid #e1e3e4;
+  margin-bottom: 12px;
 }
-.month-switcher button:hover { background: #f0f6ff; }
+.side-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #191c1d;
+  color: #ffffff;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.side-name {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: .92rem;
+  font-weight: 700;
+  color: #191c1d;
+}
 
-.mypage-section {
-  background: white; border-radius: 16px; padding: 1.5rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.section-title {
-  font-size: 1rem; font-weight: 700; margin: 0 0 1.2rem; color: #0f172a;
+.side-menu__item {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-size: .88rem;
+  font-weight: 500;
+  color: #4c4546;
+  transition: background .12s, color .12s, border-color .12s;
+  border-right: 2px solid transparent;
+}
+.side-menu__item:hover { background: #f3f4f5; color: #191c1d; }
+.side-menu__item.active {
+  background: #f3f4f5;
+  color: #191c1d;
+  font-weight: 700;
+  border-right: 2px solid #191c1d;
 }
 
-/* 고정지출, 정산은 전체 너비 차지 */
-.section-fixed,
-.section-settle {
-  grid-column: 1 / -1;
+.side-logout {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #cfc4c5;
+  background: #ffffff;
+  color: #4c4546;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  border-radius: 0;
+  transition: border-color .12s, color .12s;
 }
+.side-logout:hover { border-color: #ba1a1a; color: #ba1a1a; }
 
-@media (max-width: 1024px) {
-  .mypage-content { grid-template-columns: 1fr; }
-  .section-fixed,
-  .section-settle { grid-column: auto; }
-}
-@media (max-width: 768px) {
+.mypage-content { min-width: 0; }
+
+@media (max-width: 900px) {
   .mypage-inner { grid-template-columns: 1fr; }
+  .mypage-side {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+  }
+  .side-profile { display: none; }
+  .side-menu { flex-direction: row; }
+  .side-menu__item { border-right: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .side-menu__item.active { border-right: none; border-bottom: 2px solid #191c1d; }
+  .side-logout { display: none; }
 }
 </style>

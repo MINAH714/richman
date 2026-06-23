@@ -65,6 +65,12 @@
             AI 챗봇
           </router-link>
         </li>
+        <li>
+          <router-link to="/board" class="nav-item">
+            <i class="ti ti-message-circle" aria-hidden="true"></i>
+            게시판
+          </router-link>
+        </li>
       </ul>
       <div class="nav-auth">
         <template v-if="authStore.isLoggedIn">

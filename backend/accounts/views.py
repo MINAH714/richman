@@ -53,6 +53,12 @@ class MyProfileView(APIView):
     def get(self, request):
         return Response(UserProfileSerializer(request.user).data)
 
+    def patch(self, request):
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

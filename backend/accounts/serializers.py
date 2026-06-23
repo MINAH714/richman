@@ -25,3 +25,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'nickname', 'email']
+        read_only_fields = ['id', 'username']   # username은 수정 불가
