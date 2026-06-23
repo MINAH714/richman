@@ -6,7 +6,7 @@ from rest_framework import status
 from .serializers import SignupSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
-from .serializers import UserProfileSerializer
+from .serializers import UserProfileSerializer, SignupSerializer
 
 import requests
 from rest_framework_simplejwt.tokens import RefreshToken
