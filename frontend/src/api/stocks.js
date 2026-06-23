@@ -33,9 +33,9 @@ export const getStockPrice = (symbol) =>
   axios.get(`/api/stocks/price/${symbol}/`)
 
 // 차트 데이터 조회 (캔들 + 이동평균선 + 볼린저 밴드)
-// period 예시: '1mo', '3mo', '6mo', '1y'
-export const getStockChart = (symbol, period = '3mo') =>
-  axios.get(`/api/stocks/chart/${symbol}/`, { params: { period } })
+// interval: '1d'(일봉) | '1wk'(주봉) | '1mo'(월봉) | '3mo'(분기봉)
+export const getStockChart = (symbol, interval = '1d') =>
+  axios.get(`/api/stocks/chart/${symbol}/`, { params: { interval } })
 
 // 종목 검색 자동완성
 // query 예시: 'apple', '삼성', 'AAPL'

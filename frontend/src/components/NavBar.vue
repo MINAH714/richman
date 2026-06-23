@@ -76,11 +76,11 @@
             </button>
 
             <transition name="dropdown-fade">
-              <div v-if="dropdownOpen" class="profile-dropdown"></div>
+              <div v-if="dropdownOpen" class="profile-dropdown">
                 <router-link to="/mypage" class="dropdown-item" @click="dropdownOpen = false">
                   <i class="ti ti-user" aria-hidden="true"></i> 마이페이지
                 </router-link>
-                <div class="dropdown-divider">
+                <div class="dropdown-divider"></div>
                 <button class="dropdown-item dropdown-item--danger" @click="logout">
                   <i class="ti ti-logout" aria-hidden="true"></i> 로그아웃
                 </button>

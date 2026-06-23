@@ -157,23 +157,34 @@ def stock_price(request, symbol):
 def stock_chart(request, symbol):
     """
     GET /api/stocks/chart/<symbol>/
-    
-    yfinance로 주가 히스토리를 가져와서
-    이동평균선(MA)과 볼린저 밴드를 계산해서 내려주는 API
-    
-    쿼리 파라미터:
-    - period: 조회 기간 (기본값 3mo) → 1mo, 3mo, 6mo, 1y
-    
-    예: GET /api/stocks/chart/AAPL/?period=3mo
+
+    interval: 캔들 단위
+        '1d'  → 일봉  (200일치 데이터)
+        '1wk' → 주봉  (200주치 데이터)
+        '1mo' → 월봉  (200개월치 데이터)
+        '3mo' → 분기봉 (200분기치 데이터)
+
+    프론트에서 wheel zoom으로 보이는 범위를 조절하므로
+    백엔드는 충분히 많은 데이터를 내려줌
     """
-    # 쿼리 파라미터에서 기간을 받음, 없으면 3개월(3mo) 기본값
-    period = request.query_params.get('period', '3mo')
+    interval = request.query_params.get('interval', '1d')
+
+    # 200개 캔들 기준으로 넉넉하게 period 설정
+    interval_period_map = {
+        '1d':  '1y',    # 일봉: 최근 1년 (약 252 영업일)
+        '1wk': '4y',    # 주봉: 최근 4년 (약 208주)
+        '1mo': '15y',   # 월봉: 최근 15년 (180개월)
+        '3mo': 'max',   # 분기봉: 최대 기간
+    }
+
+    if interval not in interval_period_map:
+        interval = '1d'
+
+    period = interval_period_map[interval]
 
     try:
         ticker = yf.Ticker(symbol)
-        # yfinance로 주가 히스토리 조회
-        # interval='1d' → 일봉 기준
-        df = ticker.history(period=period, interval='1d')
+        df = ticker.history(period=period, interval=interval)
 
         if df.empty:
             return Response(
@@ -181,62 +192,61 @@ def stock_chart(request, symbol):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # ── 이동평균선(MA) 계산 ─────────────────────────
-        # rolling(n).mean() = 최근 n일의 평균을 구하는 함수
-        # 예: MA5 = 최근 5일 종가의 평균
+        # ── 이동평균선 계산 ───────────────────────────────
         df['MA5']  = df['Close'].rolling(window=5).mean()
         df['MA20'] = df['Close'].rolling(window=20).mean()
         df['MA60'] = df['Close'].rolling(window=60).mean()
 
-        # ── 볼린저 밴드(Bollinger Band) 계산 ────────────
-        # 볼린저 밴드 = 이동평균 ± (표준편차 × 2)
-        # 상단 밴드: 주가가 여기 위로 올라가면 "과매수" 신호
-        # 하단 밴드: 주가가 여기 아래로 내려가면 "과매도" 신호
+        # ── 볼린저 밴드 계산 ──────────────────────────────
         df['BB_mid']   = df['Close'].rolling(window=20).mean()
         df['BB_std']   = df['Close'].rolling(window=20).std()
         df['BB_upper'] = df['BB_mid'] + (df['BB_std'] * 2)
         df['BB_lower'] = df['BB_mid'] - (df['BB_std'] * 2)
 
-        # ── 날짜 인덱스를 문자열로 변환 ─────────────────
-        # JSON으로 내려보낼 때 datetime 타입은 직렬화가 안 되므로 문자열로 변환
-        df.index = df.index.strftime('%Y-%m-%d')
+        # ── interval별 날짜 포맷 ──────────────────────────
+        fmt_map = {
+            '1d':  '%m.%d',
+            '1wk': '%y.%m',
+            '1mo': '%y.%m',
+            '3mo': '%Y',
+        }
+        date_fmt = fmt_map.get(interval, '%m.%d')
+        df.index = df.index.strftime(date_fmt)
 
-        # ── NaN(계산 불가 값)을 None으로 변환 ───────────
-        # rolling 계산 초반부는 데이터가 부족해 NaN이 생김
-        # 예: MA60은 처음 60일 이전 데이터는 NaN
-        # JSON에서 NaN은 오류이므로 None(null)으로 변환
         def to_val(v):
-            import math
-            return None if (v is None or (isinstance(v, float) and math.isnan(v))) else round(float(v), 4)
+            return None if (
+                v is None or (isinstance(v, float) and math.isnan(v))
+            ) else round(float(v), 4)
 
-        # ── 응답 데이터 조립 ─────────────────────────────
         result = {
-            'symbol': symbol,
-            'period': period,
-            'dates':  df.index.tolist(),  # x축 날짜 목록
-            'candle': [                   # 캔들스틱용 OHLC 데이터
+            'symbol':     symbol,
+            'interval':   interval,
+            'period':     period,
+            'total':      len(df),   # 전체 캔들 개수 (프론트에서 초기 범위 계산용)
+            'dates':      df.index.tolist(),
+            'candle': [
                 {
-                    'x': date,
+                    'x': d,
                     'y': [
-                        to_val(row['Open']),   # 시가
-                        to_val(row['High']),   # 고가
-                        to_val(row['Low']),    # 저가
-                        to_val(row['Close']),  # 종가
+                        to_val(row['Open']),
+                        to_val(row['High']),
+                        to_val(row['Low']),
+                        to_val(row['Close']),
                     ]
                 }
-                for date, row in df.iterrows()
+                for d, row in df.iterrows()
             ],
-            'ma': {                       # 이동평균선 데이터
+            'ma': {
                 'ma5':  [to_val(v) for v in df['MA5']],
                 'ma20': [to_val(v) for v in df['MA20']],
                 'ma60': [to_val(v) for v in df['MA60']],
             },
-            'bollinger': {                # 볼린저 밴드 데이터
+            'bollinger': {
                 'upper': [to_val(v) for v in df['BB_upper']],
                 'mid':   [to_val(v) for v in df['BB_mid']],
                 'lower': [to_val(v) for v in df['BB_lower']],
             },
-            'volume': [to_val(v) for v in df['Volume']],  # 거래량
+            'volume': [to_val(v) for v in df['Volume']],
         }
 
         return Response(result)
