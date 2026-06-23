@@ -106,9 +106,12 @@ async function loadRecommend() {
 }
 
 .search-btn{
-  background:#42b883;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  /* background:#42b883;
   color:white;
-  border:none;
+  border:none; */
   border-radius:15px;
   padding:15px 30px;
   cursor:pointer;
@@ -117,7 +120,7 @@ async function loadRecommend() {
 }
 
 .search-btn:hover{
-  background:#2ea06f;
+  background:#2659ac;
 }
 
 .section-title{

@@ -1,6 +1,8 @@
+<!-- src/views/HomeView.vue -->
 <template>
   <div class="home">
 
+    <!-- ── HERO ── -->
     <section class="hero-section">
       <div class="section-inner hero-grid">
 
@@ -12,35 +14,103 @@
             AI가 맞춤 인사이트를 제공합니다
           </p>
           <div class="hero-btns">
-            <router-link to="/chat" class="btn btn-primary">
-              <i class="ti ti-robot" aria-hidden="true"></i> AI 비서 시작
-            </router-link>
-            <router-link to="/finlife" class="btn btn-outline">
+            <router-link to="/finlife" class="btn btn-primary">
               <i class="ti ti-building-bank" aria-hidden="true"></i> 예적금
             </router-link>
-            <router-link to="/stocks/watchlist" class="btn btn-outline">
+            <router-link to="/stocks/watchlist" class="btn btn-primary">
               <i class="ti ti-chart-candle" aria-hidden="true"></i> 주식/현물
+            </router-link>
+            <router-link to="/crypto" class="btn btn-primary">
+              <i class="ti ti-coin" aria-hidden="true"></i> 크립토
+            </router-link>
+            <router-link to="/chat" class="btn btn-outline">
+              <i class="ti ti-robot" aria-hidden="true"></i> AI 비서 시작
             </router-link>
           </div>
         </div>
 
-        <div class="hero-graph-card">
-          <p class="graph-label">실시간 시세 추이 (BTC)</p>
-          <p class="graph-value">
-            {{ formatPrice(btcTicker?.trade_price) }}
-            <span class="graph-rate" :class="changeClass(btcTicker?.change)">
-              {{ formatRate(btcTicker?.change_rate) }}
-            </span>
-          </p>
-          <svg viewBox="0 0 280 90" class="graph-svg" role="img" aria-label="비트코인 30일 가격 추이">
-            <polyline :points="chartPoints" fill="none" stroke="#378ADD" stroke-width="2.5" />
-            <polygon :points="chartAreaPoints" fill="#E6F1FB" opacity="0.6" />
-          </svg>
-        </div>
+        <!-- ── 그래프 카드 2개 나란히 ── -->
+        <div class="hero-cards">
 
+          <!-- 삼성전자 주가 카드 -->
+          <div
+            class="hero-graph-card"
+            style="cursor:pointer"
+            @click="$router.push('/stocks/chart/005930.KS')"
+          >
+            <p class="graph-label">삼성전자 (005930.KS)</p>
+            <p class="graph-value">
+              <span v-if="samsungPrice">
+                {{ samsungPrice.toLocaleString('ko-KR') }}원
+              </span>
+              <span v-else class="graph-loading">로딩 중...</span>
+              <span
+                v-if="samsungChangeRate != null"
+                class="graph-rate"
+                :class="samsungChangeRate >= 0 ? 'up' : 'down'"
+              >
+                {{ samsungChangeRate >= 0 ? '+' : '' }}{{ samsungChangeRate }}%
+              </span>
+            </p>
+            <!-- 삼성전자 SVG 라인 차트 -->
+            <svg
+              viewBox="0 0 280 90"
+              class="graph-svg"
+              role="img"
+              aria-label="삼성전자 주가 추이"
+            >
+              <polyline
+                :points="samsungChartPoints"
+                fill="none"
+                stroke="#ef4444"
+                stroke-width="2.5"
+              />
+              <polygon
+                :points="samsungChartAreaPoints"
+                fill="#fef2f2"
+                opacity="0.6"
+              />
+            </svg>
+          </div>
+
+          <!-- BTC 카드 -->
+          <div
+            class="hero-graph-card"
+            style="cursor:pointer"
+            @click="$router.push('/crypto/KRW-BTC')"
+          >
+            <p class="graph-label">실시간 시세 추이 (BTC)</p>
+            <p class="graph-value">
+              {{ formatPrice(btcTicker?.trade_price) }}
+              <span class="graph-rate" :class="changeClass(btcTicker?.change)">
+                {{ formatRate(btcTicker?.change_rate) }}
+              </span>
+            </p>
+            <svg
+              viewBox="0 0 280 90"
+              class="graph-svg"
+              role="img"
+              aria-label="비트코인 30일 가격 추이"
+            >
+              <polyline
+                :points="chartPoints"
+                fill="none"
+                stroke="#378ADD"
+                stroke-width="2.5"
+              />
+              <polygon
+                :points="chartAreaPoints"
+                fill="#E6F1FB"
+                opacity="0.6"
+              />
+            </svg>
+          </div>
+
+        </div>
       </div>
     </section>
 
+    <!-- ── 실시간 시세 ── -->
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
@@ -76,51 +146,52 @@
       </div>
     </section>
 
+    <!-- ── 기능 바로가기 ── -->
     <section class="feature-section">
       <div class="section-inner">
         <h2 class="section-title center">기능 바로가기</h2>
 
         <div class="feature-grid">
-          <router-link to="/consumption" class="feature-card">
-            <i class="ti ti-building-bank feature-icon" aria-hidden="true"></i>
+          <router-link to="/finlife" class="feature-card feature-card--active">
+            <i class="ti ti-building-bank feature-icon--active" aria-hidden="true"></i>
             <p class="feature-name">예적금 랭킹</p>
             <p class="feature-status">최고 금리 찾기</p>
-            <span class="feature-btn">둘러보기</span>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
-          <router-link to="/stocks/chart" class="feature-card">
-            <i class="ti ti-chart-line feature-icon" aria-hidden="true"></i>
+          <router-link to="/stocks/watchlist" class="feature-card feature-card--active">
+            <i class="ti ti-chart-line feature-icon--active" aria-hidden="true"></i>
             <p class="feature-name">주식 및 현물</p>
             <p class="feature-status">실시간 시세 차트</p>
-            <span class="feature-btn">둘러보기</span>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
-          <router-link to="/stocks/watchlist" class="feature-card">
-            <i class="ti ti-brand-youtube feature-icon" aria-hidden="true"></i>
-            <p class="feature-name">관심 종목</p>
+          <router-link to="/youtube" class="feature-card feature-card--active">
+            <i class="ti ti-brand-youtube feature-icon--active" aria-hidden="true"></i>
+            <p class="feature-name">관심 영상</p>
             <p class="feature-status">유튜브 트렌드 분석</p>
-            <span class="feature-btn">둘러보기</span>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
           <router-link to="/crypto/buzz" class="feature-card feature-card--active">
-            <i class="ti ti-flame feature-icon feature-icon--active" aria-hidden="true"></i>
+            <i class="ti ti-flame feature-icon--active" aria-hidden="true"></i>
             <p class="feature-name">크립토 버즈</p>
             <p class="feature-status feature-status--live">실시간 감성분석</p>
             <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
-          <router-link to="/chat" class="feature-card">
-            <i class="ti ti-message-chatbot feature-icon" aria-hidden="true"></i>
+          <router-link to="/chat" class="feature-card feature-card--active">
+            <i class="ti ti-message-chatbot feature-icon--active" aria-hidden="true"></i>
             <p class="feature-name">AI 맞춤 추천</p>
             <p class="feature-status">나만의 금융 비서</p>
-            <span class="feature-btn">둘러보기</span>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
 
-          <router-link to="/insight" class="feature-card">
-            <i class="ti ti-map-pin feature-icon" aria-hidden="true"></i>
+          <router-link to="/bank-map" class="feature-card feature-card--active">
+            <i class="ti ti-map-pin feature-icon--active" aria-hidden="true"></i>
             <p class="feature-name">주변 은행 검색</p>
             <p class="feature-status">내 위치 기반 경로안내</p>
-            <span class="feature-btn">둘러보기</span>
+            <span class="feature-btn feature-btn--primary">바로가기 →</span>
           </router-link>
         </div>
       </div>
@@ -132,7 +203,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { cryptoAPI } from '@/api/crypto'
+import { getStockChart } from '@/api/stocks'
 
+// ── 크립토 데이터 ────────────────────────────────────
 const allCoins  = ref([])
 const isLoading = ref(true)
 const candles   = ref([])
@@ -147,14 +220,72 @@ const btcTicker = computed(() =>
   allCoins.value.find(c => c.market === 'KRW-BTC')
 )
 
-// ── 캔들 데이터 → SVG 라인 좌표 변환 ──────────────────────
+// ── 삼성전자 주가 데이터 ──────────────────────────────
+const samsungPrices     = ref([])   // 최근 30일 종가 목록
+const samsungPrice      = ref(null) // 현재가 (가장 최근 종가)
+const samsungChangeRate = ref(null) // 등락률 (%)
+
+// 삼성전자 주가 히스토리 로드 (일봉 30일)
+async function loadSamsungChart() {
+  try {
+    const res = await getStockChart('005930.KS', '1d')
+    const data = res.data
+
+    if (!data || !data.candle || data.candle.length === 0) return
+
+    // 전체 데이터에서 최근 30개만 사용
+    const candles30 = data.candle.slice(-30)
+
+    // 종가(close) 배열 추출
+    samsungPrices.value = candles30.map(c => c.y[3]).filter(v => v != null)
+
+    // 현재가 = 가장 최근 종가
+    const latest = samsungPrices.value[samsungPrices.value.length - 1]
+    const prev   = samsungPrices.value[samsungPrices.value.length - 2]
+    samsungPrice.value = latest
+
+    // 등락률 계산
+    if (latest && prev && prev !== 0) {
+      samsungChangeRate.value = parseFloat(
+        ((latest - prev) / prev * 100).toFixed(2)
+      )
+    }
+  } catch (e) {
+    console.warn('삼성전자 차트 로드 실패:', e)
+  }
+}
+
+// 삼성전자 SVG 라인 좌표 계산
+const samsungChartPoints = computed(() => {
+  const prices = samsungPrices.value
+  if (!prices || prices.length < 2) return '0,70 280,70'
+
+  const min    = Math.min(...prices)
+  const max    = Math.max(...prices)
+  const range  = max - min || 1
+  const stepX  = 280 / (prices.length - 1)
+
+  return prices
+    .map((p, i) => {
+      const x = (i * stepX).toFixed(1)
+      const y = (90 - ((p - min) / range) * 80 - 5).toFixed(1)
+      return `${x},${y}`
+    })
+    .join(' ')
+})
+
+const samsungChartAreaPoints = computed(() =>
+  `0,90 ${samsungChartPoints.value} 280,90`
+)
+
+// ── BTC SVG 라인 좌표 계산 ────────────────────────────
 const chartPoints = computed(() => {
   if (!candles.value.length) return '0,70 280,70'
   const prices = candles.value.map(c => c.trade_price).reverse()
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  const range = max - min || 1
-  const stepX = 280 / (prices.length - 1)
+  const min    = Math.min(...prices)
+  const max    = Math.max(...prices)
+  const range  = max - min || 1
+  const stepX  = 280 / (prices.length - 1)
 
   return prices
     .map((p, i) => {
@@ -167,6 +298,7 @@ const chartPoints = computed(() => {
 
 const chartAreaPoints = computed(() => `0,90 ${chartPoints.value} 280,90`)
 
+// ── API 호출 ──────────────────────────────────────────
 async function loadCoins() {
   try {
     const { data } = await cryptoAPI.getCoins()
@@ -191,10 +323,12 @@ let timer = null
 onMounted(() => {
   loadCoins()
   loadBtcCandles()
-  timer = setInterval(loadCoins, 10_000)
+  loadSamsungChart()                        // 삼성전자 차트 로드
+  timer = setInterval(loadCoins, 10_000)   // 크립토만 10초 폴링 (주식은 실시간 변동 적음)
 })
 onUnmounted(() => clearInterval(timer))
 
+// ── 포맷 헬퍼 ─────────────────────────────────────────
 function formatPrice(price) {
   if (price == null) return '-'
   return price >= 100
@@ -219,7 +353,6 @@ function changeClass(change) {
   font-family: var(--font-main);
   color: var(--color-text-primary);
 }
-
 .section-inner {
   max-width: 1100px;
   margin: 0 auto;
@@ -251,10 +384,18 @@ function changeClass(change) {
 .hero-section { padding: 48px 24px 56px; }
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 1fr 1fr;   /* 좌: 텍스트, 우: 카드 2개 */
   gap: 2.5rem;
   align-items: center;
 }
+
+/* ── 카드 2개를 세로로 쌓는 컨테이너 ── */
+.hero-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .eyebrow {
   font-size: 12px;
   font-weight: 600;
@@ -302,22 +443,37 @@ function changeClass(change) {
 }
 .btn-outline:hover { background: var(--color-bg-secondary); }
 
-/* 히어로 그래프 카드 */
+/* ── 그래프 카드 (카드 하나당 높이를 줄여서 2개가 나란히 들어가게) ── */
 .hero-graph-card {
   background: var(--color-bg-card);
   border: 0.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1.4rem;
+  padding: 1rem 1.2rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.graph-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 6px; }
-.graph-value {
-  font-size: 1.4rem;
+.hero-graph-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.graph-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin: 0 0 4px;
   font-weight: 500;
-  margin: 0 0 14px;
-  letter-spacing: -0.01em;
 }
-.graph-rate { font-size: 0.82rem; font-weight: 500; margin-left: 6px; }
-.graph-svg { width: 100%; height: 90px; display: block; }
+.graph-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.graph-rate { font-size: 0.8rem; font-weight: 600; }
+.graph-loading { font-size: 0.85rem; color: var(--color-text-tertiary); }
+.graph-svg { width: 100%; height: 72px; display: block; }
 
 /* ── 실시간 시세 ── */
 .preview-section { padding: 0 0 56px; }
@@ -334,7 +490,6 @@ function changeClass(change) {
   font-size: 0.68rem;
   font-weight: 600;
 }
-
 .metric-card {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
@@ -357,17 +512,17 @@ function changeClass(change) {
 }
 .metric-label { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0 0 6px; }
 .metric-value { font-size: 1.05rem; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
-.metric-rate { font-size: 0.78rem; font-weight: 500; margin: 0; }
+.metric-rate  { font-size: 0.78rem; font-weight: 500; margin: 0; }
 
 .up   { color: var(--color-up); }
 .down { color: var(--color-down); }
 .flat { color: var(--color-text-tertiary); }
 
-/* ── 기능 카드 확장 (F1301) ── */
+/* ── 기능 카드 ── */
 .feature-section { padding: 0 0 72px; }
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* 명세서 반영을 위해 유동적 3열/2열 적용 */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
 }
 .feature-card {
@@ -382,20 +537,13 @@ function changeClass(change) {
   transition: border-color 0.15s, transform 0.15s;
 }
 .feature-card:hover { transform: translateY(-4px); border-color: var(--color-primary-light); }
-.feature-card--active {
-  border: 2px solid var(--color-primary);
-}
+.feature-card--active { border: 2px solid var(--color-primary); }
 .feature-card--active:hover { border-color: var(--color-primary-hover); }
 
-.feature-icon {
-  font-size: 28px;
-  color: var(--color-text-tertiary);
-  margin-bottom: 14px;
-  display: block;
-}
-.feature-icon--active { color: var(--color-primary); }
+.feature-icon        { font-size: 28px; color: var(--color-text-tertiary); margin-bottom: 14px; display: block; }
+.feature-icon--active { font-size: 28px; color: var(--color-primary); margin-bottom: 14px; display: block; }
 
-.feature-name { font-size: 1rem; font-weight: 600; margin: 0 0 6px; }
+.feature-name   { font-size: 1rem; font-weight: 600; margin: 0 0 6px; }
 .feature-status { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0 0 16px; }
 .feature-status--live { color: var(--color-primary); font-weight: 500; }
 
@@ -418,12 +566,14 @@ function changeClass(change) {
 }
 .feature-btn--primary:hover { background: var(--color-primary-hover); }
 
-/* 반응형 처리 */
+/* ── 반응형 ── */
 @media (max-width: 900px) {
-  .hero-grid { grid-template-columns: 1fr; }
+  .hero-grid    { grid-template-columns: 1fr; }
+  .hero-cards   { flex-direction: row; }  /* 모바일에서는 가로 나열 */
   .preview-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
+  .hero-cards   { flex-direction: column; }
   .preview-grid { grid-template-columns: 1fr; }
   .feature-grid { grid-template-columns: 1fr; }
 }
