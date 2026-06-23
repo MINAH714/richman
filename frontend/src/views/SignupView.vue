@@ -24,14 +24,7 @@
           </div>
         </div>
 
-        <div class="field-wrap">
-          <label class="field-label">이름</label>
-          <div class="input-wrap">
-            <input v-model="form.name" type="text" class="field-input" placeholder="실명을 입력하세요" required :disabled="isLoading" />
-          </div>
-        </div>
-
-        <div class="field-wrap">
+        <div class="field-wr   ap">
           <label class="field-label">닉네임</label>
           <div class="input-wrap">
             <input v-model="form.nickname" type="text" class="field-input" placeholder="닉네임" required :disabled="isLoading" />
