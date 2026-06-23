@@ -6,11 +6,21 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from '@/stores/auth'   // ← 추가
 
 const app = createApp(App)
+const pinia = createPinia()                     // ← 변수로 분리
 
-app.use(createPinia())
+app.use(pinia)
 app.use(router)
+
+// 새로고침 시 토큰이 있으면 프로필 자동 복원
+const authStore = useAuthStore()                 // ← pinia 등록 후에 호출
+if (authStore.access) {
+  authStore.fetchProfile().catch(() => {
+    authStore.logout()
+  })
+}
 
 app.mount('#app')
 
@@ -23,6 +33,5 @@ function loadKakaoMapScript() {
     document.head.appendChild(script)
   })
 }
-
 
 loadKakaoMapScript()
