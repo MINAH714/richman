@@ -94,7 +94,13 @@ const routes = [
     component: () => import('@/views/StockChartView.vue'),
     meta: { requiresAuth: true },
   },
-
+  // 기존 stock-chart 라우트 위에 추가
+  {
+    path: '/stocks/chart',
+    name: 'stock-chart-default',
+    // 파라미터 없이 접근 시 삼성전자 차트로 리다이렉트
+    redirect: { name: 'stock-chart', params: { symbol: '005930.KS' } },
+  },
   {
     path: '/stocks/prediction',
     name: 'stock-prediction',
