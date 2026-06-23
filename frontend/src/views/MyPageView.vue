@@ -7,7 +7,10 @@
       <aside class="mypage-side">
         <div class="side-profile">
           <div class="side-avatar">{{ initial }}</div>
-          <p class="side-name">{{ authStore.user?.nickname || authStore.user?.username || '...' }}</p>
+          <div>
+            <p class="side-name">{{ authStore.user?.nickname || authStore.user?.username || '...' }}</p>
+            <p class="side-email">{{ authStore.user?.email || '' }}</p>
+          </div>
         </div>
 
         <nav class="side-menu">
@@ -18,21 +21,24 @@
             :class="{ active: activeTab === item.key }"
             @click="activeTab = item.key"
           >
-            <span class="side-menu__label">{{ item.label }}</span>
+            <i :class="`ti ${item.icon}`" aria-hidden="true"></i>
+            <span>{{ item.label }}</span>
           </button>
         </nav>
 
-        <button class="side-logout" @click="logout">로그아웃</button>
+        <button class="side-logout" @click="logout">
+          <i class="ti ti-logout" aria-hidden="true"></i>
+          로그아웃
+        </button>
       </aside>
 
       <!-- 우측 콘텐츠 -->
       <main class="mypage-content">
-
-        <SpendingTab v-if="activeTab === 'spending'" />
-        <PortfolioTab v-else-if="activeTab === 'portfolio'" />
+        <SpendingTab    v-if="activeTab === 'spending'" />
+        <PortfolioTab   v-else-if="activeTab === 'portfolio'" />
         <EditProfileTab v-else-if="activeTab === 'profile'" />
-
       </main>
+
     </div>
   </div>
 </template>
@@ -49,10 +55,11 @@ const authStore = useAuthStore()
 const router    = useRouter()
 
 const MENU = [
-  { key: 'spending',  label: '소비 분석' },
-  { key: 'portfolio', label: '포트폴리오' },
-  { key: 'profile',   label: '프로필 수정' },
+  { key: 'spending',  label: '소비 분석',   icon: 'ti-chart-pie' },
+  { key: 'portfolio', label: '포트폴리오',   icon: 'ti-briefcase' },
+  { key: 'profile',   label: '프로필 수정',  icon: 'ti-user-edit' },
 ]
+
 const activeTab = ref('spending')
 
 onMounted(() => {
@@ -60,7 +67,7 @@ onMounted(() => {
 })
 
 const initial = computed(() =>
-  (authStore.user?.nickname || authStore.user?.username || '?')[0]
+  (authStore.user?.nickname || authStore.user?.username || '?')[0].toUpperCase()
 )
 
 function logout() {
@@ -71,44 +78,51 @@ function logout() {
 
 <style scoped>
 .mypage {
-  background: #f8f9fa;
+  background: var(--color-bg-page);
   min-height: calc(100vh - 56px);
-  padding: 48px 24px;
-  font-family: 'Inter', sans-serif;
-  color: #191c1d;
+  padding: 40px 24px;
+  font-family: var(--font-main);
+  color: var(--color-text-primary);
 }
+
 .mypage-inner {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 32px;
+  grid-template-columns: 220px 1fr;
+  gap: 28px;
+  align-items: start;
 }
 
 /* ── 좌측 사이드바 ── */
 .mypage-side {
   position: sticky;
-  top: 80px;
-  align-self: start;
+  top: 72px;
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
+
+/* 프로필 영역 */
 .side-profile {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 4px 20px;
-  border-bottom: 1px solid #e1e3e4;
-  margin-bottom: 12px;
+  padding-bottom: 16px;
+  margin-bottom: 8px;
+  border-bottom: 0.5px solid var(--color-border);
 }
+
 .side-avatar {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: #191c1d;
-  color: #ffffff;
-  font-family: 'Hanken Grotesk', sans-serif;
+  background: var(--color-primary);
+  color: white;
   font-size: 1rem;
   font-weight: 700;
   display: flex;
@@ -116,71 +130,147 @@ function logout() {
   justify-content: center;
   flex-shrink: 0;
 }
+
 .side-name {
-  font-family: 'Hanken Grotesk', sans-serif;
-  font-size: .92rem;
-  font-weight: 700;
-  color: #191c1d;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 2px;
 }
 
+.side-email {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 130px;
+}
+
+/* 메뉴 */
 .side-menu {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+
 .side-menu__item {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   background: none;
   border: none;
-  border-radius: 0;
+  border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
-  font-family: 'Inter', sans-serif;
-  font-size: .88rem;
+  font-family: var(--font-main);
+  font-size: 0.88rem;
   font-weight: 500;
-  color: #4c4546;
-  transition: background .12s, color .12s, border-color .12s;
-  border-right: 2px solid transparent;
+  color: var(--color-text-secondary);
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
 }
-.side-menu__item:hover { background: #f3f4f5; color: #191c1d; }
+
+.side-menu__item i {
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.side-menu__item:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
 .side-menu__item.active {
-  background: #f3f4f5;
-  color: #191c1d;
-  font-weight: 700;
-  border-right: 2px solid #191c1d;
-}
-
-.side-logout {
-  margin-top: 20px;
-  padding: 10px;
-  border: 1px solid #cfc4c5;
-  background: #ffffff;
-  color: #4c4546;
-  font-size: .8rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
   font-weight: 600;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  border-radius: 0;
-  transition: border-color .12s, color .12s;
 }
-.side-logout:hover { border-color: #ba1a1a; color: #ba1a1a; }
 
-.mypage-content { min-width: 0; }
+.side-menu__item.active i {
+  color: var(--color-primary);
+}
 
+/* 로그아웃 버튼 */
+.side-logout {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--color-border);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-main);
+  border-radius: var(--radius-md);
+  width: 100%;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.side-logout i { font-size: 16px; }
+
+.side-logout:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ── 우측 콘텐츠 ── */
+.mypage-content {
+  min-width: 0;
+  background: var(--color-bg-card);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+}
+
+/* ── 반응형 ── */
 @media (max-width: 900px) {
-  .mypage-inner { grid-template-columns: 1fr; }
+  .mypage-inner {
+    grid-template-columns: 1fr;
+  }
+
   .mypage-side {
     position: static;
     flex-direction: row;
     align-items: center;
+    padding: 12px 16px;
+    gap: 8px;
     overflow-x: auto;
   }
+
   .side-profile { display: none; }
-  .side-menu { flex-direction: row; }
-  .side-menu__item { border-right: none; border-bottom: 2px solid transparent; white-space: nowrap; }
-  .side-menu__item.active { border-right: none; border-bottom: 2px solid #191c1d; }
-  .side-logout { display: none; }
+
+  .side-menu {
+    flex-direction: row;
+    flex: 1;
+    gap: 4px;
+  }
+
+  .side-menu__item {
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .side-logout {
+    margin-top: 0;
+    white-space: nowrap;
+    width: auto;
+    padding: 8px 12px;
+  }
+
+  .mypage-content {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .mypage { padding: 20px 16px; }
 }
 </style>

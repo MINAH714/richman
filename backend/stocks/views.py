@@ -139,17 +139,44 @@ def portfolio_upsert(request, watchlist_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def stock_price(request, symbol):
-    """
-    GET /api/stocks/price/<symbol>/  → 현재가 조회
-    예: GET /api/stocks/price/AAPL/
-    """
-    price = get_current_price(symbol)
-    if price is None:
+    try:
+        ticker = yf.Ticker(symbol)
+        info   = ticker.fast_info
+        price  = info.get('lastPrice') or info.get('last_price')
+
+        if price is None:
+            return Response(
+                {'error': f'{symbol} 종목의 현재가를 가져올 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 💡 국내 주식(KS)은 KOREAN_TOP_STOCKS에서 한글 이름 먼저 찾기
+        korean_name = next(
+            (s['name'] for s in KOREAN_TOP_STOCKS if s['symbol'] == symbol),
+            None
+        )
+
+        if korean_name:
+            # 국내 주식: 한글 종목명 사용
+            name = korean_name
+        else:
+            # 해외 주식: yfinance에서 영문명 가져오기
+            try:
+                name = ticker.info.get('longName') or ticker.info.get('shortName') or symbol
+            except Exception:
+                name = symbol
+
+        return Response({
+            'symbol':        symbol,
+            'name':          name,
+            'current_price': float(price),
+        })
+
+    except Exception as e:
         return Response(
             {'error': f'{symbol} 종목의 현재가를 가져올 수 없습니다.'},
             status=status.HTTP_404_NOT_FOUND
         )
-    return Response({'symbol': symbol, 'current_price': price})
 
 
 @api_view(['GET'])

@@ -5,7 +5,7 @@
     <header class="detail-header">
       <button class="back-btn" @click="router.back()">← BACK</button>
       <div class="coin-title">
-        <h1 class="market-id">{{ symbol }}</h1>
+        <h1 class="market-id">{{ stockName }}</h1>
         <span class="status-badge">LIVE</span>
       </div>
       <button
@@ -159,6 +159,9 @@ const route  = useRoute()
 const router = useRouter()
 const watchlistStore = useWatchlistStore()
 const symbol = route.params.symbol
+const stockName = computed(() =>
+  stockPrice.value?.name || symbol
+)
 
 // ── 차트 상태 ──────────────────────────────────────────
 const chartData      = ref(null)
@@ -780,5 +783,11 @@ function changeClass(change) {
 
 @media (max-width: 1024px) {
   .content-grid { grid-template-columns: 1fr; }
+}
+.market-symbol {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 8px;
 }
 </style>
