@@ -1,239 +1,167 @@
+<!-- src/views/RecommendView.vue -->
 <template>
   <div class="recommend-page">
-    <div class="section-inner recommend-container">
-      
-      <div class="recommend-header">
-        <p class="eyebrow">AI FINANCIAL RECOMMENDATION</p>
-        <h1 class="hero-title">고객님을 위한 맞춤 금융상품</h1>
-        <p class="hero-desc">
-          입력해주신 자산 규모와 투자 성향을 바탕으로<br>
-          가장 적합한 상위 3개 상품을 분석했습니다.
-        </p>
+    <div class="recommend-header">
+      <span class="eyebrow">PERSONALIZED</span>
+      <h2>나에게 맞는 예적금 추천</h2>
+      <p class="subtitle">
+        설문에 답해주신 투자성향, 자산규모, 관심자산을 기반으로 추천해드려요.
+      </p>
+    </div>
+
+    <p v-if="loading" class="status-text">분석 중...</p>
+
+    <div v-else-if="message" class="empty-state">
+      <span class="empty-icon">⚠️</span>
+      <p>{{ message }}</p>
+      <router-link v-if="needsOnboarding" to="/onboarding" class="btn-onboard">
+        설문 작성하러 가기
+      </router-link>
+    </div>
+
+    <div v-else class="recommend-list">
+      <div
+        v-for="(item, idx) in recommendations"
+        :key="item.id"
+        class="recommend-card"
+        @click="goDetail(item.id)"
+      >
+        <div class="card-rank">{{ idx + 1 }}</div>
+        <div class="card-body">
+          <div class="card-top">
+            <span class="card-bank">{{ item.kor_co_nm }}</span>
+            <span class="card-score">매칭 {{ item.score }}점</span>
+          </div>
+          <h3 class="card-name">{{ item.fin_prdt_nm }}</h3>
+          <div class="card-meta">
+            <span>{{ item.save_trm }}개월</span>
+            <span class="dot">·</span>
+            <span>기본 {{ item.intr_rate }}%</span>
+            <span class="dot">·</span>
+            <span class="best-rate">최고 {{ item.intr_rate2 }}%</span>
+          </div>
+        </div>
       </div>
-
-      <div class="recommend-grid">
-        
-        <div class="feature-card product-card rank-1">
-          <div class="card-header">
-            <span class="rank-badge">1위</span>
-            <p class="bank-name">신한은행</p>
-          </div>
-          <h3 class="product-name">청년 처음적금</h3>
-          <p class="product-rate">최고 연 <span>6.50%</span></p>
-          
-          <div class="ai-reason">
-            <strong>AI 추천 이유</strong>
-            <p>공격적인 투자 성향을 보완할 수 있는 안정적인 고금리 적금입니다. 20대 청년 우대 이율을 최대한 활용할 수 있습니다.</p>
-          </div>
-          
-          <button class="btn btn-primary w-100">가입하기</button>
-        </div>
-
-        <div class="feature-card product-card">
-          <div class="card-header">
-            <span class="rank-badge default-badge">2위</span>
-            <p class="bank-name">우리은행</p>
-          </div>
-          <h3 class="product-name">우리 청년도약계좌</h3>
-          <p class="product-rate">최고 연 <span>6.00%</span></p>
-          
-          <div class="ai-reason">
-            <strong>AI 추천 이유</strong>
-            <p>월 50만 원 이상의 여유 자금을 중장기적으로 굴리기에 적합하며, 비과세 혜택으로 실질 수익률이 높습니다.</p>
-          </div>
-          
-          <button class="btn btn-outline w-100">가입하기</button>
-        </div>
-
-        <div class="feature-card product-card">
-          <div class="card-header">
-            <span class="rank-badge default-badge">3위</span>
-            <p class="bank-name">카카오뱅크</p>
-          </div>
-          <h3 class="product-name">한달적금</h3>
-          <p class="product-rate">최고 연 <span>5.50%</span></p>
-          
-          <div class="ai-reason">
-            <strong>AI 추천 이유</strong>
-            <p>가상화폐 등 변동성이 큰 자산에 투자하기 전, 단기적으로 목돈을 파킹하고 소소한 성취감을 얻기에 좋습니다.</p>
-          </div>
-          
-          <button class="btn btn-outline w-100">가입하기</button>
-        </div>
-
-      </div>
-
     </div>
   </div>
 </template>
 
 <script setup>
-// 추후 백엔드 API (GET /api/products/recommend/) 호출 로직이 이곳에 들어갈 예정입니다.
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getRecommendations } from '@/api/recommend'
+
+const router = useRouter()
+const recommendations = ref([])
+const message = ref(null)
+const loading = ref(true)
+
+const needsOnboarding = computed(() => message.value?.includes('온보딩'))
+
+onMounted(async () => {
+  try {
+    const { data } = await getRecommendations()
+    recommendations.value = data.recommendations
+    message.value = data.message
+  } finally {
+    loading.value = false
+  }
+})
+
+const goDetail = (id) => router.push(`/finlife/${id}`)
 </script>
 
 <style scoped>
 .recommend-page {
-  min-height: 100vh;
-  background: var(--color-bg-page);
-  font-family: var(--font-main);
-  color: var(--color-text-primary);
-  padding: 60px 24px;
-}
-
-.recommend-container {
-  max-width: 1080px;
+  max-width: 720px;
   margin: 0 auto;
+  padding: 48px 24px;
+  font-family: 'Inter', sans-serif;
 }
-
-/* ── HEADER ── */
-.recommend-header {
-  text-align: center;
-  margin-bottom: 56px;
-}
+.recommend-header { margin-bottom: 32px; }
 .eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--color-primary);
-  margin: 0 0 14px;
-}
-.hero-title {
-  font-size: 2.1rem;
-  font-weight: 600;
-  margin: 0 0 16px;
-  letter-spacing: -0.02em;
-}
-.hero-desc {
-  font-size: 0.95rem;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-}
-
-/* ── GRID & CARDS ── */
-.recommend-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-.product-card {
-  padding: 32px 24px;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: transform 0.2s, border-color 0.2s;
-}
-.product-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--color-primary);
-}
-.rank-1 {
-  border: 2px solid var(--color-primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.rank-badge {
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
-.default-badge {
-  background: var(--color-border-strong);
-  color: var(--color-text-primary);
-}
-.bank-name {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  margin: 0;
-}
-
-.product-name {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 8px;
-  letter-spacing: -0.01em;
-}
-.product-rate {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  margin: 0 0 24px;
-}
-.product-rate span {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin-left: 4px;
-}
-
-/* ── AI REASON BOX ── */
-.ai-reason {
-  background: var(--color-bg-secondary);
-  padding: 16px;
-  border-radius: var(--radius-md);
-  margin-bottom: 24px;
-  flex-grow: 1; /* 카드 높이 맞추기 */
-}
-.ai-reason strong {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #0050cc;
   display: block;
-  font-size: 0.8rem;
-  color: var(--color-primary);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-.ai-reason p {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--color-text-secondary);
-  margin: 0;
+.recommend-header h2 {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #191c1d;
+  margin: 0 0 8px;
 }
+.subtitle { font-size: .88rem; color: #4c4546; margin: 0; }
 
-/* ── BUTTONS ── */
-.btn {
-  padding: 14px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
+.status-text { text-align: center; padding: 4rem; color: #4c4546; }
+
+.empty-state {
+  border: 1px solid #e1e3e4;
+  background: #ffffff;
+  padding: 56px 32px;
   text-align: center;
 }
-.btn-primary {
-  background: var(--color-primary);
-  color: #fff;
-  border: 1px solid var(--color-primary);
+.empty-icon { font-size: 2rem; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: .9rem; color: #4c4546; margin: 0 0 20px; line-height: 1.6; }
+.btn-onboard {
+  display: inline-block;
+  padding: 10px 22px;
+  background: #191c1d;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: .85rem;
+  font-weight: 600;
 }
-.btn-primary:hover {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-}
-.btn-outline {
-  background: transparent;
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-strong);
-}
-.btn-outline:hover {
-  border-color: var(--color-text-primary);
-}
-.w-100 {
-  width: 100%;
-}
+.btn-onboard:hover { background: #0050cc; }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .recommend-grid { grid-template-columns: repeat(2, 1fr); }
+.recommend-list { display: flex; flex-direction: column; gap: 12px; }
+.recommend-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #e1e3e4;
+  background: #ffffff;
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color .12s;
 }
-@media (max-width: 600px) {
-  .recommend-grid { grid-template-columns: 1fr; }
+.recommend-card:hover { border-color: #191c1d; }
+
+.card-rank {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #191c1d;
+  color: #ffffff;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
+.card-body { flex: 1; }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.card-bank { font-size: .76rem; color: #4c4546; font-weight: 600; }
+.card-score {
+  font-family: 'Geist', sans-serif;
+  font-size: 11px;
+  color: #0050cc;
+  font-weight: 700;
+  border: 1px solid #0050cc;
+  padding: 2px 8px;
+}
+.card-name {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #191c1d;
+  margin: 0 0 6px;
+}
+.card-meta { font-size: .8rem; color: #4c4546; }
+.dot { margin: 0 6px; color: #cfc4c5; }
+.best-rate { color: #ba1a1a; font-weight: 700; }
 </style>

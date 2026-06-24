@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'finlife',
     'bankmap',
     'board',
-    # 'commodities',
+    'commodities',
+    'recommend',
     
     'django.contrib.admin',
     'django.contrib.auth',
