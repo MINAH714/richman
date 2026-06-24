@@ -1,8 +1,7 @@
-<!-- src/views/HomeView.vue -->
+// frontend/src/views/HomeView.vue
 <template>
   <div class="home">
 
-    <!-- ── HERO ── -->
     <section class="hero-section">
       <div class="section-inner hero-grid">
 
@@ -29,87 +28,83 @@
           </div>
         </div>
 
-        <!-- ── 그래프 카드 2개 나란히 ── -->
         <div class="hero-cards">
-
-          <!-- 삼성전자 주가 카드 -->
-          <div
-            class="hero-graph-card"
-            style="cursor:pointer"
-            @click="$router.push('/stocks/chart/005930.KS')"
-          >
-            <p class="graph-label">삼성전자 (005930.KS)</p>
-            <p class="graph-value">
-              <span v-if="samsungPrice">
-                {{ samsungPrice.toLocaleString('ko-KR') }}원
-              </span>
-              <span v-else class="graph-loading">로딩 중...</span>
-              <span
-                v-if="samsungChangeRate != null"
-                class="graph-rate"
-                :class="samsungChangeRate >= 0 ? 'up' : 'down'"
-              >
-                {{ samsungChangeRate >= 0 ? '+' : '' }}{{ samsungChangeRate }}%
-              </span>
-            </p>
-            <!-- 삼성전자 SVG 라인 차트 -->
-            <svg
-              viewBox="0 0 280 90"
-              class="graph-svg"
-              role="img"
-              aria-label="삼성전자 주가 추이"
+          
+          <div class="hero-cards-col">
+            <div
+              class="hero-graph-card"
+              style="cursor:pointer"
+              @click="$router.push('/stocks/chart/005930.KS')"
             >
-              <polyline
-                :points="samsungChartPoints"
-                fill="none"
-                stroke="#ef4444"
-                stroke-width="2.5"
-              />
-              <polygon
-                :points="samsungChartAreaPoints"
-                fill="#fef2f2"
-                opacity="0.6"
-              />
-            </svg>
+              <p class="graph-label">삼성전자 (005930.KS)</p>
+              <p class="graph-value">
+                <span v-if="samsungPrice">
+                  {{ samsungPrice.toLocaleString('ko-KR') }}원
+                </span>
+                <span v-else class="graph-loading">로딩 중...</span>
+                <span
+                  v-if="samsungChangeRate != null"
+                  class="graph-rate"
+                  :class="samsungChangeRate >= 0 ? 'up' : 'down'"
+                >
+                  {{ samsungChangeRate >= 0 ? '+' : '' }}{{ samsungChangeRate }}%
+                </span>
+              </p>
+              <svg viewBox="0 0 280 90" class="graph-svg" role="img" aria-label="삼성전자 주가 추이">
+                <polyline :points="samsungChartPoints" fill="none" stroke="#ef4444" stroke-width="2.5" />
+                <polygon :points="samsungChartAreaPoints" fill="#fef2f2" opacity="0.6" />
+              </svg>
+            </div>
+
+            <div
+              class="hero-graph-card"
+              style="cursor:pointer"
+              @click="$router.push('/crypto/KRW-BTC')"
+            >
+              <p class="graph-label">비트코인 (BTC)</p>
+              <p class="graph-value">
+                {{ formatPrice(btcTicker?.trade_price) }}
+                <span class="graph-rate" :class="changeClass(btcTicker?.change)">
+                  {{ formatRate(btcTicker?.change_rate) }}
+                </span>
+              </p>
+              <svg viewBox="0 0 280 90" class="graph-svg" role="img" aria-label="비트코인 30일 가격 추이">
+                <polyline :points="chartPoints" fill="none" stroke="#378ADD" stroke-width="2.5" />
+                <polygon :points="chartAreaPoints" fill="#E6F1FB" opacity="0.6" />
+              </svg>
+            </div>
           </div>
 
-          <!-- BTC 카드 -->
-          <div
-            class="hero-graph-card"
-            style="cursor:pointer"
-            @click="$router.push('/crypto/KRW-BTC')"
-          >
-            <p class="graph-label">실시간 시세 추이 (BTC)</p>
-            <p class="graph-value">
-              {{ formatPrice(btcTicker?.trade_price) }}
-              <span class="graph-rate" :class="changeClass(btcTicker?.change)">
-                {{ formatRate(btcTicker?.change_rate) }}
-              </span>
-            </p>
-            <svg
-              viewBox="0 0 280 90"
-              class="graph-svg"
-              role="img"
-              aria-label="비트코인 30일 가격 추이"
-            >
-              <polyline
-                :points="chartPoints"
-                fill="none"
-                stroke="#378ADD"
-                stroke-width="2.5"
-              />
-              <polygon
-                :points="chartAreaPoints"
-                fill="#E6F1FB"
-                opacity="0.6"
-              />
-            </svg>
+          <div class="hero-cards-col">
+            <div class="hero-graph-card forex-card">
+              <div class="forex-header">
+                <p class="graph-label">실시간 주요 환율 (KRW)</p>
+                <span class="live-dot pulse">LIVE</span>
+              </div>
+              
+              <div class="forex-list">
+                <div v-for="fx in forexRates" :key="fx.id" class="forex-item">
+                  <div class="forex-name-group">
+                    <span class="forex-flag" aria-hidden="true">{{ fx.flag }}</span>
+                    <span class="forex-name">{{ fx.name }}</span>
+                  </div>
+                  <div class="forex-price-group">
+                    <span class="forex-price">
+                      {{ fx.price != null ? fx.price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-' }}
+                    </span>
+                    <span class="forex-rate" :class="fx.change_type === 'RISE' ? 'up' : fx.change_type === 'FALL' ? 'down' : 'flat'">
+                      {{ fx.change_rate != null ? (fx.change_rate > 0 ? '+' : '') + fx.change_rate + '%' : '-' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
       </div>
     </section>
-        <!-- ── 주식 실시간 시세 ── -->
+
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
@@ -131,9 +126,7 @@
           >
             <p class="metric-label">{{ stock.name }}</p>
             <p class="metric-value">
-              {{ stock.current_price != null
-                  ? stock.current_price.toLocaleString('ko-KR')
-                  : '-' }}
+              {{ stock.current_price != null ? stock.current_price.toLocaleString('ko-KR') : '-' }}
               <span class="metric-unit">
                 {{ stock.symbol.endsWith('.KS') ? '원' : 'USD' }}
               </span>
@@ -142,15 +135,13 @@
               class="metric-rate"
               :class="stock.change_type === 'RISE' ? 'up' : stock.change_type === 'FALL' ? 'down' : 'flat'"
             >
-              {{ stock.change_rate != null
-                  ? (stock.change_rate >= 0 ? '+' : '') + stock.change_rate + '%'
-                  : '-' }}
+              {{ stock.change_rate != null ? (stock.change_rate >= 0 ? '+' : '') + stock.change_rate + '%' : '-' }}
             </p>
           </router-link>
         </div>
       </div>
     </section>
-    <!-- ── 크립토 실시간 시세 ── -->
+
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
@@ -186,7 +177,6 @@
       </div>
     </section>
 
-    <!-- ── 기능 바로가기 ── -->
     <section class="feature-section">
       <div class="section-inner">
         <h2 class="section-title center">기능 바로가기</h2>
@@ -253,7 +243,7 @@ const STOCK_TICKERS = [
   { symbol: 'NVDA',      name: 'NVIDIA' },
 ]
 
-const stockPrices   = ref([])   // 주식 현재가 목록
+const stockPrices   = ref([])
 const isStockLoading = ref(true)
 
 async function loadStockPrices() {
@@ -269,7 +259,6 @@ async function loadStockPrices() {
         return {
           symbol:        ticker.symbol,
           name:          ticker.name,
-          unit:          ticker.unit,
           current_price: data.current_price,
           change_rate:   data.change_rate,
           change_type:   data.change_type,
@@ -278,7 +267,6 @@ async function loadStockPrices() {
       return {
         symbol:        ticker.symbol,
         name:          ticker.name,
-        unit:          ticker.unit,
         current_price: null,
         change_rate:   null,
         change_type:   'EVEN',
@@ -286,10 +274,8 @@ async function loadStockPrices() {
     })
 
     if (stockPrices.value.length === 0) {
-      // 첫 로드: 전체 교체
       stockPrices.value = fresh
     } else {
-      // 폴링 갱신: 가격/등락률만 업데이트
       stockPrices.value.forEach((item, i) => {
         item.current_price = fresh[i]?.current_price ?? item.current_price
         item.change_rate   = fresh[i]?.change_rate   ?? item.change_rate
@@ -300,6 +286,39 @@ async function loadStockPrices() {
     console.warn('주식 시세 로드 실패:', e)
   } finally {
     isStockLoading.value = false
+  }
+}
+
+// ── 환율 실시간 시세 (yfinance 티커 활용) ──────────────
+const FOREX_TICKERS = [
+  { symbol: 'KRW=X',    name: 'USD', id: 'USD', flag: '🇺🇸', multiplier: 1 },
+  { symbol: 'EURKRW=X', name: 'EUR', id: 'EUR', flag: '🇪🇺', multiplier: 1 },
+  // yfinance의 JPYKRW=X는 1엔 기준이므로 한국 관례(100엔)에 맞게 100을 곱함
+  { symbol: 'JPYKRW=X', name: 'JPY(100)', id: 'JPY', flag: '🇯🇵', multiplier: 100 },
+  { symbol: 'CNYKRW=X', name: 'CNY', id: 'CNY', flag: '🇨🇳', multiplier: 1 },
+]
+
+const forexRates = ref(FOREX_TICKERS.map(t => ({ ...t, price: null, change_rate: null, change_type: 'EVEN' })))
+
+async function loadForexRates() {
+  try {
+    const results = await Promise.allSettled(
+      FOREX_TICKERS.map(t => getStockPrice(t.symbol))
+    )
+    
+    results.forEach((result, i) => {
+      if (result.status === 'fulfilled' && result.value.data) {
+        const data = result.value.data
+        let price = data.current_price
+        if (price != null) price *= FOREX_TICKERS[i].multiplier
+        
+        forexRates.value[i].price = price
+        forexRates.value[i].change_rate = data.change_rate
+        forexRates.value[i].change_type = data.change_type
+      }
+    })
+  } catch (e) {
+    console.warn('환율 데이터 로드 실패:', e)
   }
 }
 
@@ -319,11 +338,10 @@ const btcTicker = computed(() =>
 )
 
 // ── 삼성전자 주가 데이터 ──────────────────────────────
-const samsungPrices     = ref([])   // 최근 30일 종가 목록
-const samsungPrice      = ref(null) // 현재가 (가장 최근 종가)
-const samsungChangeRate = ref(null) // 등락률 (%)
+const samsungPrices     = ref([])
+const samsungPrice      = ref(null)
+const samsungChangeRate = ref(null)
 
-// 삼성전자 주가 히스토리 로드 (일봉 30일)
 async function loadSamsungChart() {
   try {
     const res = await getStockChart('005930.KS', '1d')
@@ -331,30 +349,22 @@ async function loadSamsungChart() {
 
     if (!data || !data.candle || data.candle.length === 0) return
 
-    // 전체 데이터에서 최근 30개만 사용
     const candles30 = data.candle.slice(-30)
-
-    // 종가(close) 배열 추출
     samsungPrices.value = candles30.map(c => c.y[3]).filter(v => v != null)
 
-    // 현재가 = 가장 최근 종가
     const latest = samsungPrices.value[samsungPrices.value.length - 1]
     const prev   = samsungPrices.value[samsungPrices.value.length - 2]
     samsungPrice.value = latest
 
-    // 등락률 계산
     if (latest && prev && prev !== 0) {
-      samsungChangeRate.value = parseFloat(
-        ((latest - prev) / prev * 100).toFixed(2)
-      )
+      samsungChangeRate.value = parseFloat(((latest - prev) / prev * 100).toFixed(2))
     }
   } catch (e) {
     console.warn('삼성전자 차트 로드 실패:', e)
   }
 }
 
-// 삼성전자 SVG 라인 좌표 계산
-  const samsungChartPoints = computed(() => {
+const samsungChartPoints = computed(() => {
   const prices = samsungPrices.value
   if (!prices || prices.length < 2) return '0,70 280,70'
 
@@ -364,11 +374,7 @@ async function loadSamsungChart() {
   const stepX  = 280 / (prices.length - 1)
 
   return prices
-    .map((p, i) => {
-      const x = (i * stepX).toFixed(1)
-      const y = (90 - ((p - min) / range) * 80 - 5).toFixed(1)
-      return `${x},${y}`
-    })
+    .map((p, i) => `${(i * stepX).toFixed(1)},${(90 - ((p - min) / range) * 80 - 5).toFixed(1)}`)
     .join(' ')
 })
 
@@ -386,11 +392,7 @@ const chartPoints = computed(() => {
   const stepX  = 280 / (prices.length - 1)
 
   return prices
-    .map((p, i) => {
-      const x = (i * stepX).toFixed(1)
-      const y = (90 - ((p - min) / range) * 80 - 5).toFixed(1)
-      return `${x},${y}`
-    })
+    .map((p, i) => `${(i * stepX).toFixed(1)},${(90 - ((p - min) / range) * 80 - 5).toFixed(1)}`)
     .join(' ')
 })
 
@@ -419,12 +421,20 @@ async function loadBtcCandles() {
 
 let timer = null
 onMounted(() => {
+  // 초기 데이터 로드
   loadCoins()
   loadBtcCandles()
-  loadSamsungChart()                        // 삼성전자 차트 로드
-  loadStockPrices()   
-  timer = setInterval(loadCoins, 10_000)   // 크립토만 10초 폴링 (주식은 실시간 변동 적음)
+  loadSamsungChart()
+  loadStockPrices()
+  loadForexRates()
+
+  // 10초 폴링 (코인 + 환율)
+  timer = setInterval(() => {
+    loadCoins()
+    loadForexRates()
+  }, 10_000)
 })
+
 onUnmounted(() => clearInterval(timer))
 
 // ── 포맷 헬퍼 ─────────────────────────────────────────
@@ -483,16 +493,24 @@ function changeClass(change) {
 .hero-section { padding: 48px 24px 56px; }
 .hero-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;   /* 좌: 텍스트, 우: 카드 2개 */
+  /* 🔧 수정: 좌측 텍스트와 우측 카드의 비율 조정 (우측에 공간을 더 줌) */
+  grid-template-columns: 1fr 1.3fr;
   gap: 2.5rem;
   align-items: center;
 }
 
-/* ── 카드 2개를 세로로 쌓는 컨테이너 ── */
+/* ── 우측 대시보드 구조 (Flex Row로 2칼럼 배치) ── */
 .hero-cards {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+}
+.hero-cards-col {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
+  min-width: 0; /* 넘침 방지 */
 }
 
 .eyebrow {
@@ -542,7 +560,7 @@ function changeClass(change) {
 }
 .btn-outline:hover { background: var(--color-bg-secondary); }
 
-/* ── 그래프 카드 (카드 하나당 높이를 줄여서 2개가 나란히 들어가게) ── */
+/* ── 차트 카드 기본 스타일 ── */
 .hero-graph-card {
   background: var(--color-bg-card);
   border: 0.5px solid var(--color-border);
@@ -574,7 +592,68 @@ function changeClass(change) {
 .graph-loading { font-size: 0.85rem; color: var(--color-text-tertiary); }
 .graph-svg { width: 100%; height: 72px; display: block; }
 
-/* ── 실시간 시세 ── */
+/* ── 환율 카드 전용 스타일 (우측 칼럼 꽉 채우기) ── */
+.forex-card {
+  flex: 1; /* 부모 높이만큼 꽉 채움 */
+  display: flex;
+  flex-direction: column;
+}
+.forex-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.forex-header .graph-label { margin-bottom: 0; font-size: 12px; }
+
+.forex-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 4개 항목을 일정 간격으로 분배 */
+  gap: 12px;
+  margin-top: 6px;
+}
+.forex-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--color-border);
+}
+.forex-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.forex-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.forex-flag { font-size: 16px; }
+.forex-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+.forex-price-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.forex-price {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-main);
+  letter-spacing: -0.01em;
+}
+.forex-rate {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* ── 실시간 시세 (공통) ── */
 .preview-section { padding: 0 0 56px; }
 .preview-grid {
   display: grid;
@@ -589,6 +668,15 @@ function changeClass(change) {
   font-size: 0.68rem;
   font-weight: 600;
 }
+.pulse {
+  animation: pulse-green 2s infinite;
+}
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
 .metric-card {
   background: var(--color-bg-secondary);
   border-radius: var(--radius-md);
@@ -612,6 +700,7 @@ function changeClass(change) {
 .metric-label { font-size: 0.78rem; color: var(--color-text-secondary); margin: 0 0 6px; }
 .metric-value { font-size: 1.05rem; font-weight: 500; margin: 0 0 4px; letter-spacing: -0.01em; }
 .metric-rate  { font-size: 0.78rem; font-weight: 500; margin: 0; }
+.metric-unit { font-size: 0.7rem; font-weight: 400; color: var(--color-text-tertiary); margin-left: 2px; }
 
 .up   { color: var(--color-up); }
 .down { color: var(--color-down); }
@@ -664,22 +753,15 @@ function changeClass(change) {
   font-weight: 500;
 }
 .feature-btn--primary:hover { background: var(--color-primary-hover); }
-.metric-unit {
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--color-text-tertiary);
-  margin-left: 2px;
-}
+
 /* ── 반응형 ── */
-@media (max-width: 900px) {
-  .hero-grid    { grid-template-columns: 1fr; }
-  .hero-cards   { flex-direction: row; }  /* 모바일에서는 가로 나열 */
-  .preview-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1024px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-cards { flex-direction: row; }
 }
 @media (max-width: 600px) {
   .hero-cards   { flex-direction: column; }
-  .preview-grid { grid-template-columns: 1fr; }
+  .preview-grid { grid-template-columns: repeat(2, 1fr); }
   .feature-grid { grid-template-columns: 1fr; }
 }
-
 </style>
