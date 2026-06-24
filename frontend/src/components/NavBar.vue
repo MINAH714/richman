@@ -1,4 +1,3 @@
-// frontend/src/components/NavBar.vue
 <template>
   <nav class="navbar">
     <div class="nav-inner">
@@ -27,7 +26,6 @@
           </ul>
         </li>
 
-        <!-- 기존 주식/현물 li 전체를 아래로 교체 -->
         <li class="nav-item-dropdown">
           <div class="nav-item">
             <i class="ti ti-chart-candle" aria-hidden="true"></i>
@@ -76,6 +74,7 @@
           </router-link>
         </li>
       </ul>
+
       <div class="nav-auth">
         <template v-if="authStore.isLoggedIn">
           <div class="profile-menu" ref="profileMenuRef">
@@ -117,9 +116,11 @@ const router = useRouter()
 const dropdownOpen   = ref(false)
 const profileMenuRef = ref(null)
 
-const initial = computed(() =>
-  (authStore.user?.nickname || authStore.user?.username || '?')[0].toUpperCase()
-)
+// 🎯 [교정] 닉네임(김싸피)이 존재하면 '김'을 최우선으로 출력하도록 순서 보정
+const initial = computed(() => {
+  const nameSource = authStore.user?.nickname || authStore.user?.username || '?'
+  return nameSource[0].toUpperCase()
+})
 
 function toggleDropdown() {
   dropdownOpen.value = !dropdownOpen.value
@@ -231,8 +232,6 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
   padding: 8px 0;
   list-style: none;
   margin: 0;
-  
-  /* Hover 애니메이션 */
   opacity: 0;
   visibility: hidden;
   transform: translateY(10px);
@@ -243,7 +242,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 .nav-item-dropdown:hover .dropdown-menu {
   opacity: 1;
   visibility: visible;
-  transform: translateY(4px); /* 살짝 아래로 띄움 */
+  transform: translateY(4px);
 }
 
 .dropdown-link {
@@ -284,7 +283,7 @@ onUnmounted(() => document.removeEventListener('click', handleOutsideClick))
 .nav-btn--primary { background: var(--color-primary, #42b883); color: white; }
 .nav-btn--primary:hover { background: var(--color-primary-hover, #34d399); }
 
-/* 프로필 드롭다운 (기존 유지) */
+/* 프로필 드롭다운 */
 .profile-menu { position: relative; }
 .profile-trigger {
   display: flex;

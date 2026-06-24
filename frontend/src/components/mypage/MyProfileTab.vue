@@ -4,7 +4,9 @@
 
     <!-- ① 내 정보 카드 -->
     <section class="info-section">
-      <h3 class="section-title"><span class="section-eyebrow">PROFILE</span>내 프로필</h3>
+      <h3 class="section-title">
+        <span class="section-eyebrow">PROFILE</span>내 프로필
+      </h3>
 
       <div class="info-grid">
         <div class="info-item">
@@ -45,13 +47,13 @@
           </span>
         </div>
       </div>
-
-      <router-link to="/onboarding" class="btn-edit-survey">설문 다시 작성하기</router-link>
     </section>
 
     <!-- ② 추천 받기 -->
     <section class="recommend-section">
-      <h3 class="section-title"><span class="section-eyebrow">AI MATCH</span>금융상품 추천</h3>
+      <h3 class="section-title">
+        <span class="section-eyebrow">AI MATCH</span>금융상품 추천
+      </h3>
 
       <button
         v-if="!recommendations.length && !loading"
@@ -66,11 +68,12 @@
       <p v-if="message" class="empty-message">{{ message }}</p>
 
       <div v-if="recommendations.length" class="recommend-list">
+        <!-- 🎯 [교정 완료] :key와 @click 인자를 고유 코드(fin_prdt_cd)로 연결해 404 에러 원천 차단 -->
         <div
           v-for="(item, idx) in recommendations"
-          :key="item.id"
+          :key="item.fin_prdt_cd"
           class="recommend-card"
-          @click="goDetail(item.id)"
+          @click="goDetail(item.fin_prdt_cd)"
         >
           <div class="card-rank">{{ idx + 1 }}</div>
           <div class="card-body">
@@ -88,8 +91,6 @@
             </div>
           </div>
         </div>
-
-        <button class="btn-retry" @click="fetchRecommendations">다시 추천받기</button>
       </div>
     </section>
 
@@ -104,7 +105,7 @@ import { getRecommendations } from '@/api/recommend'
 
 const router = useRouter()
 
-const myInfo     = ref({})
+const myInfo = ref({})
 const onboarding = ref({})
 const recommendations = ref([])
 const message = ref(null)
@@ -124,12 +125,16 @@ const INTEREST_LABEL = {
 }
 
 onMounted(async () => {
-  const [infoRes, onboardRes] = await Promise.all([
-    getMyInfo(),
-    getOnboardingInfo(),
-  ])
-  myInfo.value = infoRes.data
-  onboarding.value = onboardRes.data
+  try {
+    const [infoRes, onboardRes] = await Promise.all([
+      getMyInfo(),
+      getOnboardingInfo(),
+    ])
+    myInfo.value = infoRes.data
+    onboarding.value = onboardRes.data
+  } catch (error) {
+    console.error("내 프로필 정보 로드 실패:", error)
+  }
 })
 
 async function fetchRecommendations() {
@@ -140,22 +145,41 @@ async function fetchRecommendations() {
     const { data } = await getRecommendations()
     recommendations.value = data.recommendations
     message.value = data.message
+  } catch (error) {
+    console.error("추천 데이터 패치 오류:", error)
   } finally {
     loading.value = false
   }
 }
 
-const goDetail = (id) => router.push(`/finlife/${id}`)
+// 🎯 [교정 완료] 백엔드 및 상세 뷰 라우팅 규칙에 대응하도록 고유 코드 기반 리다이렉트 처리
+const goDetail = (finPrdtCd) => {
+  router.push(`/finlife/${finPrdtCd}`)
+}
 </script>
 
 <style scoped>
-.my-profile-tab { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 24px; }
+/* ── 마이페이지 전용 모노톤 하드엣지 디자인 가이드 동기화 ── */
+.my-profile-tab {
+  font-family: 'Inter', 'Geist', 'Hanken Grotesk', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.my-profile-tab * {
+  box-sizing: border-box;
+}
 
 .info-section, .recommend-section {
   background: #ffffff;
-  border: 1px solid #e1e3e4;
+  border: 1px solid #e1e3e4; /* 하이라인 테두리 유지 */
   padding: 28px;
+  border-radius: 0px !important; /* 모노톤 하드엣지: 라운드 제거 */
+  box-shadow: none !important;    /* 모노톤 하드엣지: 그림자 제거 */
 }
+
 .section-title {
   font-family: 'Hanken Grotesk', sans-serif;
   font-size: 1.05rem;
@@ -171,7 +195,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: #0050cc;
+  color: #0050cc; /* 포인트 블루 브랜드 컬러 유지 */
 }
 
 /* ── 정보 그리드 ── */
@@ -182,6 +206,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   background: #e1e3e4;
   border: 1px solid #e1e3e4;
   margin-bottom: 20px;
+  border-radius: 0px !important;
 }
 .info-item {
   background: #ffffff;
@@ -189,6 +214,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   display: flex;
   flex-direction: column;
   gap: 4px;
+  border-radius: 0px !important;
 }
 .info-item--wide { grid-column: 1 / -1; }
 .info-label {
@@ -199,6 +225,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   color: #4c4546;
 }
 .info-value { font-size: .9rem; font-weight: 600; color: #191c1d; }
+
 .interest-tag {
   display: inline-block;
   font-size: .76rem;
@@ -206,6 +233,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   padding: 2px 8px;
   margin-right: 6px;
   font-weight: 500;
+  border-radius: 0px !important;
 }
 
 .btn-edit-survey {
@@ -229,6 +257,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: background .12s;
+  border-radius: 0px !important;
 }
 .btn-recommend:hover { background: #0050cc; }
 
@@ -240,6 +269,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   font-size: .85rem;
   border: 1px solid #e1e3e4;
   background: #f8f9fa;
+  border-radius: 0px !important;
 }
 
 .recommend-list { display: flex; flex-direction: column; gap: 10px; }
@@ -251,12 +281,13 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   padding: 16px;
   cursor: pointer;
   transition: border-color .12s;
+  border-radius: 0px !important;
 }
 .recommend-card:hover { border-color: #191c1d; }
+
 .card-rank {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
   background: #191c1d;
   color: #ffffff;
   font-family: 'Hanken Grotesk', sans-serif;
@@ -266,6 +297,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border-radius: 0px !important; /* 동그라미 제거하여 사각형의 하드엣지 감성 극대화 */
 }
 .card-body { flex: 1; }
 .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -277,6 +309,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   font-weight: 700;
   border: 1px solid #0050cc;
   padding: 1px 7px;
+  border-radius: 0px !important;
 }
 .card-name {
   font-family: 'Hanken Grotesk', sans-serif;
@@ -300,6 +333,7 @@ const goDetail = (id) => router.push(`/finlife/${id}`)
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: background .12s, color .12s;
+  border-radius: 0px !important;
 }
 .btn-retry:hover { background: #191c1d; color: #ffffff; }
 </style>

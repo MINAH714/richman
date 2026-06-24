@@ -22,9 +22,9 @@
     <div v-else class="recommend-list">
       <div
         v-for="(item, idx) in recommendations"
-        :key="item.id"
+        :key="item.fin_prdt_cd"
         class="recommend-card"
-        @click="goDetail(item.id)"
+        @click="goDetail(item.fin_prdt_cd)"
       >
         <div class="card-rank">{{ idx + 1 }}</div>
         <div class="card-body">
@@ -68,7 +68,7 @@ onMounted(async () => {
   }
 })
 
-const goDetail = (id) => router.push(`/finlife/${id}`)
+const goDetail = (finPrdtCd) => router.push(`/finlife/${finPrdtCd}`)
 </script>
 
 <style scoped>

@@ -1,4 +1,3 @@
-// frontend/src/views/MyPageView.vue
 <template>
   <div class="mypage">
     <div class="mypage-inner">
@@ -54,13 +53,15 @@ const MENU = [
 ]
 const activeTab = ref('spending')
 
+// 🎯 [교정] 마이페이지 도킹 시, 조건식을 타지 않고 무조건 백엔드 최신 정보(MeView)를 땡겨오도록 지시
 onMounted(() => {
-  if (!authStore.user) authStore.fetchProfile()
+  authStore.fetchProfile()
 })
 
-const initial = computed(() =>
-  (authStore.user?.nickname || authStore.user?.username || '?')[0]
-)
+const initial = computed(() => {
+  const nameSource = authStore.user?.nickname || authStore.user?.username || '?'
+  return nameSource[0].toUpperCase()
+})
 
 function logout() {
   authStore.logout()
@@ -78,7 +79,6 @@ function logout() {
 }
 
 .mypage-inner {
-  /* 🔧 변경: 좌우 여백을 줄이기 위해 기존 1100px에서 1300px로 확장 */
   max-width: 1300px;
   margin: 0 auto;
   display: grid;

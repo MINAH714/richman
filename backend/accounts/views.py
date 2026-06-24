@@ -34,16 +34,21 @@ class SignupView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        """
+        🎯 [교정 완료] 
+        수동 딕셔너리 리턴 대신, 이미 정의된 UserProfileSerializer를 활용하여
+        DB에 저장된 진짜 유저 정보(username, nickname, email, age)를 통째로 안전하게 리턴합니다.
+        """
         user = request.user
-
-        return Response({
-            'username': user.username,
-            'nickname': getattr(user, 'nickname', ''), # Custom User 모델에 nickname이 없을 경우를 대비한 안전한 호출
-        })
+        
+        # 이미 세팅해 두신 UserProfileSerializer를 사용하여 유저 모델 데이터를 정밀 직렬화
+        serializer = UserProfileSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 class MyProfileView(APIView):
