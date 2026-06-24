@@ -63,13 +63,7 @@ const activeTab = ref(initialTab)
 onMounted(() => {
   authStore.fetchProfile()
 })
-<<<<<<< HEAD
 
-const initial = computed(() => {
-  const nameSource = authStore.user?.nickname || authStore.user?.username || '?'
-  return nameSource[0].toUpperCase()
-})
-=======
 watch(() => route.query.tab, (newTab) => {
   if (validTabs.includes(newTab)) {
     activeTab.value = newTab
@@ -78,7 +72,7 @@ watch(() => route.query.tab, (newTab) => {
 const initial = computed(() =>
   (authStore.user?.nickname || authStore.user?.username || '?')[0]
 )
->>>>>>> feature/Boo-KAN-46-stock
+
 
 function logout() {
   authStore.logout()
