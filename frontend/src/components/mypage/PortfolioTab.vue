@@ -7,7 +7,9 @@
         <i class="ti ti-chevron-right"></i>
         <span class="current">Portfolio</span>
       </div>
-      <button class="btn-add"><i class="ti ti-plus"></i> 자산 추가하기</button>
+      <button class="btn-add" @click="isCashModalOpen = true">
+        <i class="ti ti-plus"></i> 현금 자산 추가하기
+      </button>
     </header>
 
     <div v-if="isLoading" class="loading-state">
@@ -32,23 +34,17 @@
             <h3>자산 비중</h3>
             <i class="ti ti-chart-pie"></i>
           </div>
-          
-          <div class="allocation-bars">
-            <div class="alloc-item">
-              <div class="alloc-info">
-                <span>예적금 (안전자산)</span>
-                <strong>100%</strong>
-              </div>
-              <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
-            </div>
-            
-            <div class="alloc-item disabled">
-              <div class="alloc-info">
-                <span>주식 및 크립토 (준비중)</span>
-                <span>0%</span>
-              </div>
-              <div class="bar-bg"></div>
-            </div>
+
+          <div class="donut-center-wrap">
+            <DonutChart
+              v-if="assetDonutData.length > 0"
+              :categories="assetDonutData"
+              :total-expense="summary.total_assets"
+              :color-map="assetColorMap"
+              center-label="총 자산"
+              :size="240"
+            />
+            <p v-else class="empty-chart-text">등록된 자산이 없습니다.</p>
           </div>
         </div>
 
@@ -71,6 +67,34 @@
                 <i class="ti ti-chevron-right arrow"></i>
               </div>
             </div>
+
+            <div class="list-row">
+              <div class="asset-info">
+                <div class="icon-box stock-icon"><i class="ti ti-chart-candle"></i></div>
+                <div class="asset-text">
+                  <p class="asset-name">주식</p>
+                  <p class="asset-count">{{ assets.stocks.length }}개의 종목</p>
+                </div>
+              </div>
+              <div class="asset-value-wrap">
+                <span class="asset-value">₩{{ totalStocks.toLocaleString() }}</span>
+                <i class="ti ti-chevron-right arrow"></i>
+              </div>
+            </div>
+
+            <div class="list-row">
+              <div class="asset-info">
+                <div class="icon-box cash-icon"><i class="ti ti-cash"></i></div>
+                <div class="asset-text">
+                  <p class="asset-name">현금</p>
+                  <p class="asset-count">{{ (assets.cash || []).length }}개의 자산</p>
+                </div>
+              </div>
+              <div class="asset-value-wrap">
+                <span class="asset-value">₩{{ totalCash.toLocaleString() }}</span>
+                <i class="ti ti-chevron-right arrow"></i>
+              </div>
+            </div>   <!-- ⭐ [신규 추가] -->
           </div>
         </div>
       </section>
@@ -88,11 +112,17 @@
         </div>
 
         <div v-else class="product-grid">
+          <!-- ⭐ [수정] 우측 상단 삭제 버튼 추가 -->
           <div 
             v-for="product in assets.savings" 
             :key="product.id"
             class="product-card card"
           >
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(product.id)" title="삭제">
+              ✕
+            </button>
+
+            <!-- ⭐ [신규 추가] -->
             <div class="product-header">
               <div class="icon-box-small"><i class="ti ti-coin"></i></div>
               <span class="bank-badge">{{ product.brokerage }}</span>
@@ -111,13 +141,121 @@
         </div>
       </section>
 
+      <!-- ⭐ [신규 추가] 나의 주식 포트폴리오 섹션 -->
+      <section class="portfolio-items">
+        <div class="section-header">
+          <h3>나의 주식 포트폴리오</h3>
+          <router-link to="/stocks/watchlist" class="link-more">대시보드로 이동</router-link>
+        </div>
+
+        <div v-if="assets.stocks.length === 0" class="empty-state card">
+          <i class="ti ti-chart-candle"></i>
+          <p>아직 보유한 주식이 없습니다.</p>
+          <router-link to="/stocks/watchlist" class="btn-primary">종목 찾아보기</router-link>
+        </div>
+
+        <div v-else class="product-grid">
+          <div
+            v-for="stock in assets.stocks"
+            :key="stock.id"
+            class="product-card card"
+          >
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(product.id)" title="삭제">
+              ✕
+            </button>
+
+            <div class="product-header">
+              <div class="icon-box-small stock-icon-small"><i class="ti ti-chart-candle"></i></div>
+              <span class="bank-badge stock-badge">{{ stock.brokerage }}</span>
+            </div>
+
+            <div class="product-body">
+              <p class="product-name" :title="stock.asset_name">{{ stock.asset_name }}</p>
+              <p class="product-amount">
+                {{ stock.currency === 'USD' ? '$' : '₩' }}{{ Number(stock.invested_amount).toLocaleString() }}
+              </p>
+
+              <div class="stock-detail-row">
+                <span>보유 수량</span>
+                <template v-if="editingStockId === stock.id">
+                  <div class="qty-edit-group" @click.stop>
+                    <input
+                      v-model.number="editQuantity"
+                      type="number"
+                      min="0.0001"
+                      step="0.0001"
+                      class="qty-edit-input"
+                      @keyup.enter="saveEditQuantity(stock)"
+                    />
+                    <button class="btn-qty-save" @click="saveEditQuantity(stock)">✓</button>
+                    <button class="btn-qty-cancel" @click="cancelEditQuantity">✕</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <span class="qty-display" @click.stop="startEditQuantity(stock)">
+                    <strong>{{ Number(stock.quantity) }}</strong>
+                    <span class="qty-edit-icon">✎</span>
+                  </span>
+                </template>
+              </div>
+              <div class="stock-detail-row">
+                <span>평균 매입가</span>
+                <strong>{{ stock.currency === 'USD' ? '$' : '₩' }}{{ Number(stock.purchase_price).toLocaleString() }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
+    <!-- ⭐ [신규 추가] 현금 자산 추가 모달 -->
+      <div v-if="isCashModalOpen" class="modal-backdrop" @click.self="closeCashModal">
+        <div class="modal-box">
+          <h3>현금 자산 추가</h3>
+          <p class="modal-symbol">비상금, 현금 보관액 등을 등록하세요</p>
+
+          <div class="form-group">
+            <label>자산 이름</label>
+            <input
+              v-model="cashForm.asset_name"
+              type="text"
+              placeholder="예: 비상금, 현금 보관액"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>금액 (원)</label>
+            <input
+              v-model.number="cashForm.amount"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="예: 1000000"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>메모 (선택)</label>
+            <input
+              v-model="cashForm.memo"
+              type="text"
+              placeholder="예: 급할 때 쓸 돈"
+            />
+          </div>
+          <div class="modal-actions">
+            <button class="btn-cancel" @click="closeCashModal">취소</button>
+            <button class="btn-save" :disabled="!isCashFormValid" @click="submitCashHolding">저장</button>
+          </div>
+        </div>
+      </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from '@/api/axios'
+import { deletePortfolioItem, updateStockQuantity, addCashHolding } from '@/api/portfolio'   // ⭐ [수정]
+import DonutChart from '@/components/consumption/DonutChart.vue'   
+
 
 const isLoading = ref(true)
 
@@ -125,11 +263,39 @@ const summary = ref({ total_assets: 0 })
 const assets = ref({
   savings: [],
   stocks: [],
-  crypto: []
+  crypto: [],
+  cash: [],
 })
 
 const totalSavings = computed(() => {
   return assets.value.savings.reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
+})
+
+// ⭐ [신규 추가] 주식 자산 총액 + 자산 비중(%) 계산
+const totalStocks = computed(() => {
+  return assets.value.stocks.reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
+})
+
+const savingsRatio = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return 0
+  return Math.round((totalSavings.value / total) * 100)
+})
+
+const stocksRatio = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return 0
+  return Math.round((totalStocks.value / total) * 100)
+})
+
+const totalCash = computed(() => {
+  return (assets.value.cash || []).reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
+})
+
+const cashRatio = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return 0
+  return Math.round((totalCash.value / total) * 100)
 })
 
 async function fetchPortfolio() {
@@ -144,10 +310,113 @@ async function fetchPortfolio() {
   }
 }
 
+async function handleDeleteItem(id) {
+  if (!confirm('이 자산을 포트폴리오에서 삭제할까요?')) return
+  try {
+    await deletePortfolioItem(id)
+    await fetchPortfolio()   // 삭제 후 목록 다시 불러오기
+  } catch (err) {
+    console.error('자산 삭제 실패:', err)
+    alert('삭제에 실패했습니다.')
+  }
+}
+
+// ⭐ [신규 추가] 주식 카드 보유수량 수정 모드 토글 및 처리
+const editingStockId = ref(null)   // 현재 수량 수정 중인 주식 카드 id
+const editQuantity = ref(null)
+
+function startEditQuantity(stock) {
+  editingStockId.value = stock.id
+  editQuantity.value = Number(stock.quantity)
+}
+
+function cancelEditQuantity() {
+  editingStockId.value = null
+  editQuantity.value = null
+}
+
+async function saveEditQuantity(stock) {
+  if (!editQuantity.value || editQuantity.value <= 0) {
+    alert('수량은 0보다 커야 합니다.')
+    return
+  }
+  try {
+    await updateStockQuantity(stock.id, editQuantity.value)
+    cancelEditQuantity()
+    await fetchPortfolio()   // 수정 후 목록 갱신
+  } catch (err) {
+    console.error('수량 수정 실패:', err)
+    alert('수량 수정에 실패했습니다.')
+  }
+}
+
+// 기존 saveEditQuantity 함수 아래에 추가
+
+// ⭐ [신규 추가] 현금 자산 추가 모달 상태 및 처리
+const isCashModalOpen = ref(false)
+const cashForm = ref({ asset_name: '', amount: null, memo: '' })
+
+const isCashFormValid = computed(() =>
+  cashForm.value.asset_name.trim().length > 0 && cashForm.value.amount > 0
+)
+
+function closeCashModal() {
+  isCashModalOpen.value = false
+  cashForm.value = { asset_name: '', amount: null, memo: '' }
+}
+
+async function submitCashHolding() {
+  if (!isCashFormValid.value) return
+  try {
+    await addCashHolding({
+      asset_name: cashForm.value.asset_name.trim(),
+      amount: cashForm.value.amount,
+      memo: cashForm.value.memo,
+    })
+    closeCashModal()
+    await fetchPortfolio()
+  } catch (err) {
+    console.error('현금 자산 추가 실패:', err)
+    alert('현금 자산 추가에 실패했습니다.')
+  }
+}
+
+// ⭐ [신규 추가] 자산 비중 도넛차트용 데이터 가공
+// DonutChart가 기대하는 형태: [{ category, category_display, amount, ratio }]
+const assetColorMap = {
+  savings: '#2563eb',   // 예적금 - 파랑
+  stocks:  '#ef4444',   // 주식 - 빨강
+  cash:    '#10b981',   // 현금 - 초록
+  crypto:  '#8395A7',   // 크립토(준비중) - 회색
+}
+
+const assetDonutData = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return []
+
+  const rows = [
+    { category: 'savings', category_display: '예적금', amount: totalSavings.value },
+    { category: 'stocks',  category_display: '주식',   amount: totalStocks.value },
+    { category: 'cash',    category_display: '현금',   amount: totalCash.value },
+  ]
+
+  // 금액이 0인 자산 종류는 차트에서 제외 (도넛이 깨지지 않도록)
+  return rows
+    .filter(r => r.amount > 0)
+    .map(r => ({
+      ...r,
+      ratio: Math.round((r.amount / total) * 100),   // 5단계(반올림) 요구사항도 여기서 같이 적용
+    }))
+})
+
+
 onMounted(() => {
   fetchPortfolio()
 })
+
 </script>
+
+
 
 <style scoped>
 /* ── 전체 래퍼 ── */
@@ -455,4 +724,175 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* ⭐ [신규 추가] 주식 섹션 전용 스타일 */
+.stock-icon {
+  background: #fef2f2;
+  color: #ef4444;
+}
+.stock-icon-small {
+  background: #fef2f2;
+  color: #ef4444;
+}
+.stock-badge {
+  background: #fef2f2;
+  color: #ef4444;
+}
+.stock-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #475569);
+  margin-top: 4px;
+}
+.stock-detail-row strong {
+  color: var(--color-text-primary, #0f172a);
+  font-weight: 600;
+}
+/* 기존 .product-card 스타일을 찾아서 position: relative 추가 */
+.product-card {
+  position: relative;   /* ⭐ [수정] 삭제 버튼 absolute 배치를 위해 추가 */
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+/* ⭐ [신규 추가] 카드 우측 상단 삭제 버튼 */
+.btn-delete-asset {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  z-index: 2;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-delete-asset:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* ⭐ [신규 추가] 보유수량 수정 UI 스타일 */
+.qty-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.qty-edit-icon {
+  font-size: 13px;
+  line-height: 1;
+  color: #cbd5e1;
+}
+.qty-display:hover .qty-edit-icon { color: #2563eb; }
+
+.qty-edit-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.qty-edit-input {
+  width: 70px;
+  padding: 3px 6px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+.btn-qty-save, .btn-qty-cancel {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-qty-save { background: #dbeafe; color: #2563eb; }
+.btn-qty-cancel { background: #f1f5f9; color: #94a3b8; }
+.btn-qty-save:hover { background: #2563eb; color: #fff; }
+.btn-qty-cancel:hover { background: #ef4444; color: #fff; }
+
+/* ⭐ [신규 추가] 현금 자산 추가 모달 스타일 */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px;
+  width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.modal-box h3 { margin: 0 0 4px; font-size: 18px; }
+.modal-symbol { color: #888; font-size: 13px; margin-bottom: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; }
+.form-group input {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid #ddd; border-radius: 8px;
+  font-size: 15px; box-sizing: border-box;
+}
+.modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.btn-cancel {
+  flex: 1; padding: 10px; border: 1px solid #ddd;
+  border-radius: 8px; background: #f5f5f5; cursor: pointer;
+}
+.btn-save {
+  flex: 1; padding: 10px; border: none;
+  border-radius: 8px; background: #2563eb; color: #fff;
+  cursor: pointer; font-weight: 600;
+}
+.btn-save:disabled { background: #aaa; cursor: not-allowed; }
+
+/* ⭐ [신규 추가] 현금 아이콘 색상 */
+.cash-icon {
+  background: #ecfdf5;
+  color: #10b981;
+}
+/* ⭐ [신규 추가] 자산이 없을 때 표시 */
+.empty-chart-text {
+  color: var(--color-text-tertiary, #94a3b8);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 40px 0;
+}
+/* ⭐ [신규 추가] 도넛차트를 카드 중앙에 배치 */
+.donut-center-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+  padding: 12px 0;
+}
+.donut-center-wrap :deep(.donut-wrap) {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.donut-center-wrap :deep(.donut-layout) {
+  justify-content: center;
+}
 </style>

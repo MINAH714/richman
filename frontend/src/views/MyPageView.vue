@@ -36,32 +36,49 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import SpendingTab  from '@/components/mypage/SpendingTab.vue'
 import PortfolioTab from '@/components/mypage/PortfolioTab.vue'
 import MyProfileTab from '@/components/mypage/MyProfileTab.vue'
 
+
 const authStore = useAuthStore()
 const router    = useRouter()
+const route     = useRoute()
 
 const MENU = [
   { key: 'profile',   label: '프로필' },
   { key: 'portfolio', label: '포트폴리오' },
   { key: 'spending',  label: '소비' },
 ]
-const activeTab = ref('spending')
+
+
+const validTabs = MENU.map(item => item.key)
+const initialTab = validTabs.includes(route.query.tab) ? route.query.tab : 'spending'
+const activeTab = ref(initialTab)
 
 // 🎯 [교정] 마이페이지 도킹 시, 조건식을 타지 않고 무조건 백엔드 최신 정보(MeView)를 땡겨오도록 지시
 onMounted(() => {
   authStore.fetchProfile()
 })
+<<<<<<< HEAD
 
 const initial = computed(() => {
   const nameSource = authStore.user?.nickname || authStore.user?.username || '?'
   return nameSource[0].toUpperCase()
 })
+=======
+watch(() => route.query.tab, (newTab) => {
+  if (validTabs.includes(newTab)) {
+    activeTab.value = newTab
+  }
+})
+const initial = computed(() =>
+  (authStore.user?.nickname || authStore.user?.username || '?')[0]
+)
+>>>>>>> feature/Boo-KAN-46-stock
 
 function logout() {
   authStore.logout()

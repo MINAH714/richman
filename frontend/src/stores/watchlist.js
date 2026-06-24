@@ -7,6 +7,8 @@ import {
   removeWatchlist,
   upsertPortfolio,
   getStockDashboard,
+  addStockHolding, //마이페이지 포트폴리오 연동용
+  getStockPrice, 
 } from '@/api/stocks'
 
 export const useWatchlistStore = defineStore('watchlist', () => {
@@ -57,7 +59,7 @@ export const useWatchlistStore = defineStore('watchlist', () => {
     }))
   }
 
-  // ── 대시보드 데이터 로드 (폴링 및 첫 진입 공용) ──
+
   // ── 대시보드 데이터 로드 (폴링 및 첫 진입 공용) ──
   async function loadDashboard() {
     if (!dashboardLoaded.value) isLoading.value = true
@@ -210,6 +212,56 @@ export const useWatchlistStore = defineStore('watchlist', () => {
     const target = dashboardItems.value.find(i => i.symbol === stockInfo.symbol)
     if (target) target.is_watched = !already
   }
+// ⭐ [신규 추가] 대시보드에서 수량을 입력해 관심종목 등록 + 마이페이지 포트폴리오 등록을 한 번에 처리
+  // item: 대시보드 종목 객체 (symbol, name, market, price 포함)
+  // quantity: 사용자가 입력한 구매 개수
+  // 기존 addHoldingWithQuantity 함수 전체를 아래로 교체
+
+  async function addHoldingWithQuantity(item, quantity) {
+    try {
+      // ① 아직 관심종목에 없다면 관심종목으로도 등록 (기존 stocks 앱 Watchlist)
+      const alreadyWatched = items.value.find(i => i.symbol === item.symbol)
+      if (!alreadyWatched) {
+        await addToWatchlist({
+          symbol: item.symbol,
+          name:   item.name,
+          market: item.market || 'KRX',
+        })
+        const target = dashboardItems.value.find(i => i.symbol === item.symbol)
+        if (target) target.is_watched = true
+      }
+
+      // ⭐ [신규 추가] 국내(KRX)가 아니면 환율을 조회해서 원화로 환산
+      const isDomestic = (item.market || 'KRX') === 'KRX'
+      let purchasePriceKRW = item.price   // 기본값: 국내 주식은 그대로 사용
+
+      if (!isDomestic) {
+        const fxRes = await getStockPrice('KRW=X')   // USD/KRW 환율 조회 (HomeView.vue와 동일한 방식)
+        const exchangeRate = fxRes.data?.current_price
+
+        if (!exchangeRate) {
+          return { success: false, message: '환율 정보를 가져오지 못해 추가에 실패했습니다.' }
+        }
+
+        purchasePriceKRW = item.price * exchangeRate   // 달러 단가 → 원화 단가로 환산
+      }
+
+      // ② portfolio 앱(UserPortfolio)에 보유 내역 등록 (원화 환산된 단가 기준)
+      await addStockHolding({
+        asset_code:     item.symbol,
+        name:           item.name,
+        market:         item.market || 'KRX',
+        quantity:       quantity,
+        purchase_price: purchasePriceKRW,   // ⭐ [수정] 원화 환산된 단가 전달
+      })
+
+      return { success: true }
+    } catch (err) {
+      console.error(err)
+      return { success: false, message: '포트폴리오 추가에 실패했습니다.' }
+    }
+  }
+
 
   // 더보기 버튼 클릭 시 추가 종목 로드
   async function loadMore() {
@@ -246,5 +298,6 @@ export const useWatchlistStore = defineStore('watchlist', () => {
     watchedSymbols, filteredItems, portfolioItems,
     loadDashboard, startPolling, stopPolling, changeTab, toggleWatchlist,
     fetchWatchlist, addToWatchlist, removeFromWatchlist, savePortfolio, loadMore,
+    addHoldingWithQuantity,
   }
 })
