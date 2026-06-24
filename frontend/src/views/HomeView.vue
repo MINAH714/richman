@@ -65,7 +65,7 @@
               <p class="graph-value">
                 {{ formatPrice(btcTicker?.trade_price) }}
                 <span class="graph-rate" :class="changeClass(btcTicker?.change)">
-                  {{ formatRate(btcTicker?.change_rate) }}
+                  {{ formatRate(btcTicker?.change_rate, btcTicker?.change) }}
                 </span>
               </p>
               <svg viewBox="0 0 280 90" class="graph-svg" role="img" aria-label="비트코인 30일 가격 추이">
@@ -164,7 +164,7 @@
             <p class="metric-label">{{ coin.coin_symbol }}</p>
             <p class="metric-value">{{ formatPrice(coin.trade_price) }}</p>
             <p class="metric-rate" :class="changeClass(coin.change)">
-              {{ formatRate(coin.change_rate) }}
+              {{ formatRate(coin.change_rate, coin.change) }}
             </p>
           </router-link>
 
@@ -444,9 +444,11 @@ function formatPrice(price) {
     ? price.toLocaleString('ko-KR') + '원'
     : price.toFixed(4) + '원'
 }
-function formatRate(rate) {
+function formatRate(rate, change) {
   if (rate == null) return '-'
-  return (rate >= 0 ? '+' : '') + (rate * 100).toFixed(2) + '%'
+  if (change === 'EVEN' || Math.abs(rate) < 0.000001) return '0.00%'
+  const sign = change === 'RISE' ? '+' : '-'
+  return sign + (Math.abs(rate) * 100).toFixed(2) + '%'
 }
 function changeClass(change) {
   if (change === 'RISE') return 'up'
