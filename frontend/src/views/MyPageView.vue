@@ -1,9 +1,8 @@
-<!-- src/views/MyPageView.vue -->
+// frontend/src/views/MyPageView.vue
 <template>
   <div class="mypage">
     <div class="mypage-inner">
 
-      <!-- 좌측 사이드바 -->
       <aside class="mypage-side">
         <div class="side-profile">
           <div class="side-avatar">{{ initial }}</div>
@@ -32,7 +31,6 @@
         </button>
       </aside>
 
-      <!-- 우측 콘텐츠 -->
       <main class="mypage-content">
         <SpendingTab    v-if="activeTab === 'spending'" />
         <PortfolioTab   v-else-if="activeTab === 'portfolio'" />
@@ -86,7 +84,8 @@ function logout() {
 }
 
 .mypage-inner {
-  max-width: 1100px;
+  /* 🔧 변경: 좌우 여백을 줄이기 위해 기존 1100px에서 1300px로 확장 */
+  max-width: 1300px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 220px 1fr;
