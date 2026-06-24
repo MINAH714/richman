@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'bankmap',
     'board',
     # 'commodities',
+    'portfolio',
     
     'django.contrib.admin',
     'django.contrib.auth',
