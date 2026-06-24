@@ -67,15 +67,13 @@
         <div class="action-section">
           <div class="join-links">
 
-            <a
-              :href="product.finlife_url"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
               class="btn btn-primary btn-large"
+              @click="goToPortfolio"
             >
               <i class="ti ti-external-link" aria-hidden="true"></i>
               금융상품 가입하기
-            </a>
+            </button>
 
             <a
               v-if="product.can_join_online && product.bank_home_url"
@@ -138,6 +136,26 @@ const resolvedBankUrl = computed(() => {
   const demoUrl = DEMO_PRODUCT_URL_MAP[product.value.fin_prdt_cd]
   return demoUrl || product.value.bank_home_url
 })
+
+async function goToPortfolio() {
+  try {
+    const { data } = await finlifeAPI.joinProduct(productId)
+    alert(data.message || '가입이 완료되었습니다!')
+    router.push({ name: 'mypage' })
+  } catch (error) {
+    if (error.response?.status === 401) {
+      alert('로그인이 필요한 기능입니다.')
+      router.push({ name: 'login', query: { redirect: route.fullPath } })
+    } else if (error.response?.status === 400) {
+      // 이미 가입된 상품인 경우 등
+      alert(error.response.data?.error || '이미 가입된 상품입니다.')
+      router.push({ name: 'mypage' })
+    } else {
+      console.error('가입 처리 실패:', error)
+      alert('가입 처리 중 오류가 발생했습니다.')
+    }
+  }
+}
 
 async function fetchProductDetail() {
   try {
