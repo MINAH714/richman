@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from concurrent.futures import ThreadPoolExecutor
+from rest_framework.permissions import AllowAny
 
 from .models import Watchlist, Portfolio, PredictionHistory
 from .serializers import (
@@ -137,12 +138,14 @@ def portfolio_upsert(request, watchlist_id):
 # 현재가 단건 조회 (즐겨찾기 추가 전 미리 확인용)
 # ────────────────────────────────────────────
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def stock_price(request, symbol):
     try:
         ticker = yf.Ticker(symbol)
         info   = ticker.fast_info
-        price  = info.get('lastPrice') or info.get('last_price')
+
+        price = info.get('lastPrice') or info.get('last_price')
+        prev  = info.get('previousClose') or info.get('previous_close')
 
         if price is None:
             return Response(
@@ -150,17 +153,21 @@ def stock_price(request, symbol):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 💡 국내 주식(KS)은 KOREAN_TOP_STOCKS에서 한글 이름 먼저 찾기
+        # 등락률 계산
+        change_rate = None
+        change_type = 'EVEN'
+        if price and prev and prev != 0:
+            change_rate = round((float(price) - float(prev)) / float(prev) * 100, 2)
+            change_type = 'RISE' if change_rate > 0 else ('FALL' if change_rate < 0 else 'EVEN')
+
+        # 한글 종목명 처리
         korean_name = next(
             (s['name'] for s in KOREAN_TOP_STOCKS if s['symbol'] == symbol),
             None
         )
-
         if korean_name:
-            # 국내 주식: 한글 종목명 사용
             name = korean_name
         else:
-            # 해외 주식: yfinance에서 영문명 가져오기
             try:
                 name = ticker.info.get('longName') or ticker.info.get('shortName') or symbol
             except Exception:
@@ -169,7 +176,9 @@ def stock_price(request, symbol):
         return Response({
             'symbol':        symbol,
             'name':          name,
-            'current_price': float(price),
+            'current_price': round(float(price), 4),
+            'change_rate':   change_rate,   # ← 추가
+            'change_type':   change_type,   # ← 추가
         })
 
     except Exception as e:

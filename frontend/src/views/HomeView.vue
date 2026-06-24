@@ -109,12 +109,52 @@
         </div>
       </div>
     </section>
-
-    <!-- ── 실시간 시세 ── -->
+        <!-- ── 주식 실시간 시세 ── -->
     <section class="preview-section">
       <div class="section-inner">
         <div class="section-header">
-          <h2 class="section-title">실시간 시세</h2>
+          <h2 class="section-title">📈 주식 시세</h2>
+          <span class="live-dot">LIVE</span>
+          <router-link to="/stocks/watchlist" class="section-link">전체 보기 →</router-link>
+        </div>
+
+        <div v-if="isStockLoading" class="preview-grid">
+          <div class="metric-card skeleton" v-for="n in 4" :key="n" />
+        </div>
+
+        <div v-else class="preview-grid">
+          <router-link
+            v-for="stock in stockPrices"
+            :key="stock.symbol"
+            :to="`/stocks/chart/${stock.symbol}`"
+            class="metric-card"
+          >
+            <p class="metric-label">{{ stock.name }}</p>
+            <p class="metric-value">
+              {{ stock.current_price != null
+                  ? stock.current_price.toLocaleString('ko-KR')
+                  : '-' }}
+              <span class="metric-unit">
+                {{ stock.symbol.endsWith('.KS') ? '원' : 'USD' }}
+              </span>
+            </p>
+            <p
+              class="metric-rate"
+              :class="stock.change_type === 'RISE' ? 'up' : stock.change_type === 'FALL' ? 'down' : 'flat'"
+            >
+              {{ stock.change_rate != null
+                  ? (stock.change_rate >= 0 ? '+' : '') + stock.change_rate + '%'
+                  : '-' }}
+            </p>
+          </router-link>
+        </div>
+      </div>
+    </section>
+    <!-- ── 크립토 실시간 시세 ── -->
+    <section class="preview-section">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2 class="section-title">🪙 크립토 시세</h2>
           <span class="live-dot">LIVE</span>
           <router-link to="/crypto" class="section-link">전체 보기 →</router-link>
         </div>
@@ -203,7 +243,65 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { cryptoAPI } from '@/api/crypto'
-import { getStockChart } from '@/api/stocks'
+import { getStockChart, getStockPrice } from '@/api/stocks'
+
+// ── 주식 실시간 시세 (상위 4개 고정) ─────────────────
+const STOCK_TICKERS = [
+  { symbol: '005930.KS', name: '삼성전자' },
+  { symbol: '000660.KS', name: 'SK하이닉스' },
+  { symbol: 'AAPL',      name: 'Apple' },
+  { symbol: 'NVDA',      name: 'NVIDIA' },
+]
+
+const stockPrices   = ref([])   // 주식 현재가 목록
+const isStockLoading = ref(true)
+
+async function loadStockPrices() {
+  try {
+    const results = await Promise.allSettled(
+      STOCK_TICKERS.map(t => getStockPrice(t.symbol))
+    )
+
+    const fresh = results.map((result, i) => {
+      const ticker = STOCK_TICKERS[i]
+      if (result.status === 'fulfilled') {
+        const data = result.value.data
+        return {
+          symbol:        ticker.symbol,
+          name:          ticker.name,
+          unit:          ticker.unit,
+          current_price: data.current_price,
+          change_rate:   data.change_rate,
+          change_type:   data.change_type,
+        }
+      }
+      return {
+        symbol:        ticker.symbol,
+        name:          ticker.name,
+        unit:          ticker.unit,
+        current_price: null,
+        change_rate:   null,
+        change_type:   'EVEN',
+      }
+    })
+
+    if (stockPrices.value.length === 0) {
+      // 첫 로드: 전체 교체
+      stockPrices.value = fresh
+    } else {
+      // 폴링 갱신: 가격/등락률만 업데이트
+      stockPrices.value.forEach((item, i) => {
+        item.current_price = fresh[i]?.current_price ?? item.current_price
+        item.change_rate   = fresh[i]?.change_rate   ?? item.change_rate
+        item.change_type   = fresh[i]?.change_type   ?? item.change_type
+      })
+    }
+  } catch (e) {
+    console.warn('주식 시세 로드 실패:', e)
+  } finally {
+    isStockLoading.value = false
+  }
+}
 
 // ── 크립토 데이터 ────────────────────────────────────
 const allCoins  = ref([])
@@ -256,7 +354,7 @@ async function loadSamsungChart() {
 }
 
 // 삼성전자 SVG 라인 좌표 계산
-const samsungChartPoints = computed(() => {
+  const samsungChartPoints = computed(() => {
   const prices = samsungPrices.value
   if (!prices || prices.length < 2) return '0,70 280,70'
 
@@ -324,6 +422,7 @@ onMounted(() => {
   loadCoins()
   loadBtcCandles()
   loadSamsungChart()                        // 삼성전자 차트 로드
+  loadStockPrices()   
   timer = setInterval(loadCoins, 10_000)   // 크립토만 10초 폴링 (주식은 실시간 변동 적음)
 })
 onUnmounted(() => clearInterval(timer))
@@ -565,7 +664,12 @@ function changeClass(change) {
   font-weight: 500;
 }
 .feature-btn--primary:hover { background: var(--color-primary-hover); }
-
+.metric-unit {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  margin-left: 2px;
+}
 /* ── 반응형 ── */
 @media (max-width: 900px) {
   .hero-grid    { grid-template-columns: 1fr; }
@@ -577,4 +681,5 @@ function changeClass(change) {
   .preview-grid { grid-template-columns: 1fr; }
   .feature-grid { grid-template-columns: 1fr; }
 }
+
 </style>
