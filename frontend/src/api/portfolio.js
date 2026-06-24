@@ -11,3 +11,6 @@ export const updateStockQuantity = (id, quantity) =>
 // ⭐ [신규 추가] 현금 자산 추가
 export const addCashHolding = (payload) =>
   axios.post('/api/portfolio/cash/add/', payload)
+
+export const addCryptoHolding = (payload) =>
+  axios.post('/api/portfolio/crypto/add/', payload)

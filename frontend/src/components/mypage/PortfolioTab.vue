@@ -192,6 +192,49 @@
         </div>
       </section>
     </main>
+
+    <!-- ⭐ [신규 추가] 나의 크립토 포트폴리오 섹션 -->
+      <section class="portfolio-items outer-section-card">
+        <div class="section-header">
+          <h3>나의 크립토 포트폴리오</h3>
+          <router-link to="/crypto" class="link-more">대시보드로 이동</router-link>
+        </div>
+
+        <div v-if="assets.crypto.length === 0" class="empty-state">
+          <i class="ti ti-coin"></i>
+          <p>아직 보유한 코인이 없습니다.</p>
+          <router-link to="/crypto" class="btn-primary">코인 찾아보기</router-link>
+        </div>
+
+        <div v-else class="product-grid">
+          <div
+            v-for="coin in assets.crypto"
+            :key="coin.id"
+            class="product-card-inner"
+          >
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(coin.id)" title="삭제">✕</button>
+            <div class="product-header">
+              <div class="icon-box-small crypto-icon-small"><i class="ti ti-coin"></i></div>
+              <span class="bank-badge crypto-badge">{{ coin.brokerage }}</span>
+            </div>
+
+            <div class="product-body">
+              <p class="product-name" :title="coin.asset_name">{{ coin.asset_name }}</p>
+              <p class="product-amount">₩{{ Number(coin.invested_amount).toLocaleString() }}</p>
+
+              <div class="stock-detail-row">
+                <span>보유 수량</span>
+                <strong>{{ Number(coin.quantity) }}</strong>
+              </div>
+              <div class="stock-detail-row">
+                <span>평균 매입가</span>
+                <strong>₩{{ Number(coin.purchase_price).toLocaleString() }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     <!-- ⭐ [신규 추가] 현금 자산 추가 모달 -->
       <div v-if="isCashModalOpen" class="modal-backdrop" @click.self="closeCashModal">
         <div class="modal-box">
@@ -273,6 +316,16 @@ const stocksRatio = computed(() => {
   return Math.round((totalStocks.value / total) * 100)
 })
 
+const totalCrypto = computed(() => {
+  return assets.value.crypto.reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
+})
+
+const cryptoRatio = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return 0
+  return Math.round((totalCrypto.value / total) * 100)
+})
+
 const totalCash = computed(() => {
   return (assets.value.cash || []).reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
 })
@@ -337,6 +390,32 @@ async function saveEditQuantity(stock) {
 
 // 기존 saveEditQuantity 함수 아래에 추가
 
+const assetColorMap = {
+  savings: '#2563eb',   // 예적금 - 파랑
+  stocks:  '#ef4444',   // 주식 - 빨강
+  cash:    '#10b981',   // 현금 - 초록
+  crypto:  '#f59e0b',   // 크립토 - 주황
+}
+
+const assetDonutData = computed(() => {
+  const total = summary.value.total_assets
+  if (!total || total === 0) return []
+
+  const rows = [
+    { category: 'savings', category_display: '예적금', amount: totalSavings.value },
+    { category: 'stocks',  category_display: '주식',   amount: totalStocks.value },
+    { category: 'crypto',  category_display: '크립토', amount: totalCrypto.value },
+    { category: 'cash',    category_display: '현금',   amount: totalCash.value },
+  ]
+
+  return rows
+    .filter(r => r.amount > 0)
+    .map(r => ({
+      ...r,
+      ratio: Math.round((r.amount / total) * 100),
+    }))
+})
+
 // ⭐ [신규 추가] 현금 자산 추가 모달 상태 및 처리
 const isCashModalOpen = ref(false)
 const cashForm = ref({ asset_name: '', amount: null, memo: '' })
@@ -366,33 +445,7 @@ async function submitCashHolding() {
   }
 }
 
-// ⭐ [신규 추가] 자산 비중 도넛차트용 데이터 가공
-// DonutChart가 기대하는 형태: [{ category, category_display, amount, ratio }]
-const assetColorMap = {
-  savings: '#2563eb',   // 예적금 - 파랑
-  stocks:  '#ef4444',   // 주식 - 빨강
-  cash:    '#10b981',   // 현금 - 초록
-  crypto:  '#8395A7',   // 크립토(준비중) - 회색
-}
 
-const assetDonutData = computed(() => {
-  const total = summary.value.total_assets
-  if (!total || total === 0) return []
-
-  const rows = [
-    { category: 'savings', category_display: '예적금', amount: totalSavings.value },
-    { category: 'stocks',  category_display: '주식',   amount: totalStocks.value },
-    { category: 'cash',    category_display: '현금',   amount: totalCash.value },
-  ]
-
-  // 금액이 0인 자산 종류는 차트에서 제외 (도넛이 깨지지 않도록)
-  return rows
-    .filter(r => r.amount > 0)
-    .map(r => ({
-      ...r,
-      ratio: Math.round((r.amount / total) * 100),   // 5단계(반올림) 요구사항도 여기서 같이 적용
-    }))
-})
 
 
 onMounted(() => {
@@ -905,4 +958,7 @@ onMounted(() => {
   border-color: var(--color-primary, #2563eb);
   box-shadow: 0 4px 10px -2px rgba(0,0,0,0.06);
 }
+.crypto-icon { background: #fffbeb; color: #f59e0b; }
+.crypto-icon-small { background: #fffbeb; color: #f59e0b; }
+.crypto-badge { background: #fffbeb; color: #d97706; }
 </style>

@@ -136,6 +136,96 @@ def add_stock_holding(request):
     serializer = UserPortfolioSerializer(portfolio)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+# ──────────────────────────────────────────────────────────
+# ⭐ 신규 추가: 크립토 대시보드에서 현재가로 포트폴리오에 추가
+# ──────────────────────────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_crypto_holding(request):
+    """
+    POST /api/portfolio/crypto/add/
+
+    크립토 대시보드(CryptoDashboardView)에서 '+ 추가' 버튼으로
+    수량을 입력해 포트폴리오(UserPortfolio)에 코인 보유 내역을 등록하는 API
+
+    요청 바디 예시:
+    {
+        "asset_code": "KRW-BTC",     # 마켓 코드
+        "asset_name": "비트코인",      # 코인 한글명
+        "quantity": 0.05,             # 보유 수량
+        "purchase_price": 94595000.0  # 매수 시점 현재가
+    }
+
+    동작:
+    - 같은 유저가 같은 asset_code(CRYPTO)를 이미 보유 중이면 수량/금액을 합산해서 평균 매입가 재계산 (추가 매수)
+    - 없으면 새로 생성
+    """
+    asset_code = request.data.get('asset_code')
+    asset_name = request.data.get('asset_name')
+    quantity = request.data.get('quantity')
+    purchase_price = request.data.get('purchase_price') or request.data.get('current_price')
+
+    # ── 입력값 검증 ──
+    if not asset_code or not asset_name:
+        return Response(
+            {'error': 'asset_code(market)와 asset_name은 필수입니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    try:
+        quantity = float(quantity)
+        purchase_price = float(purchase_price)
+    except (TypeError, ValueError):
+        return Response(
+            {'error': 'quantity와 purchase_price는 숫자여야 합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    if quantity <= 0 or purchase_price <= 0:
+        return Response(
+            {'error': 'quantity와 purchase_price는 0보다 커야 합니다.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    invested_amount = quantity * purchase_price
+
+    # ── 이미 보유 중인 동일 코인이 있으면 추가 매수(평균 단가 재계산) ──
+    existing = UserPortfolio.objects.filter(
+        user=request.user,
+        asset_type='CRYPTO',
+        asset_code=asset_code,
+        is_active=True,
+    ).first()
+
+    if existing:
+        prev_quantity = float(existing.quantity or 0)
+        prev_invested = float(existing.invested_amount or 0)
+
+        new_quantity = prev_quantity + quantity
+        new_invested = prev_invested + invested_amount
+        new_avg_price = new_invested / new_quantity if new_quantity else purchase_price
+
+        existing.quantity = new_quantity
+        existing.invested_amount = new_invested
+        existing.purchase_price = new_avg_price
+        existing.save()
+
+        serializer = UserPortfolioSerializer(existing)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # ── 신규 생성 ──
+    portfolio = UserPortfolio.objects.create(
+        user=request.user,
+        asset_type='CRYPTO',
+        asset_code=asset_code,
+        asset_name=asset_name,
+        brokerage='업비트',
+        currency='KRW',
+        invested_amount=invested_amount,
+        purchase_price=purchase_price,
+        quantity=quantity,
+    )
+
+    serializer = UserPortfolioSerializer(portfolio)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
