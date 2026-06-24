@@ -83,7 +83,7 @@
               class="btn btn-outline btn-large"
             >
               <i class="ti ti-building-bank" aria-hidden="true"></i>
-              {{ product.kor_co_nm }} 공식 홈페이지
+              {{ product.kor_co_nm }} 홈페이지 바로가기
             </a>
 
             <!-- 온라인 가입 불가 안내 -->
