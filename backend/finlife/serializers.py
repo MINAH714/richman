@@ -8,8 +8,10 @@ class DepositOptionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DepositProductSerializer(serializers.ModelSerializer):
-    # 역참조(related_name='options')를 통해 연결된 옵션 정보도 함께 응답
     options = DepositOptionSerializer(many=True, read_only=True)
+    finlife_url = serializers.ReadOnlyField()
+    bank_home_url = serializers.ReadOnlyField()
+    can_join_online = serializers.ReadOnlyField()
 
     class Meta:
         model = DepositProduct
