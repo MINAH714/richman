@@ -56,9 +56,9 @@ const MENU = [
 
 
 const validTabs = MENU.map(item => item.key)
-const initialTab = validTabs.includes(route.query.tab) ? route.query.tab : 'spending'
+const initialTab = validTabs.includes(route.query.tab) ? route.query.tab : 'profile'   // ⭐ [수정]
 const activeTab = ref(initialTab)
-
+""
 // 🎯 [교정] 마이페이지 도킹 시, 조건식을 타지 않고 무조건 백엔드 최신 정보(MeView)를 땡겨오도록 지시
 onMounted(() => {
   authStore.fetchProfile()
