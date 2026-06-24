@@ -82,12 +82,13 @@
             <th>티커</th>
             <th>거래소</th>
             <th class="text-right">현재가</th>
-            <th class="text-right">전일대비</th>
             <th class="text-right">등락률</th>
             <th class="text-center">관심 종목</th>
+            <th class="text-center">포트폴리오 추가</th>
           </tr>
         </thead>
         <tbody>
+          <!-- template 부분: tbody의 각 행 -->
           <tr
             v-for="item in store.dashboardItems"
             :key="item.symbol"
@@ -103,9 +104,6 @@
             <td class="price">
               {{ item.price != null ? item.price.toLocaleString('ko-KR') : '-' }}
             </td>
-            <td class="price" :class="changeClass(item.change)">
-              {{ item.change != null ? (item.change > 0 ? '+' : '') + item.change.toLocaleString('ko-KR') : '-' }}
-            </td>
             <td class="rate" :class="changeClass(item.change_rate)">
               {{ item.change_rate != null ? (item.change_rate > 0 ? '+' : '') + item.change_rate + '%' : '-' }}
             </td>
@@ -117,6 +115,37 @@
               >
                 {{ item.is_watched ? '★' : '☆' }}
               </button>
+            </td>
+            <td class="text-center" @click.stop>
+              <div v-if="addTarget?.symbol !== item.symbol" class="add-cell">
+                <button
+                  class="btn-add-holding"
+                  :disabled="item.price == null"
+                  :title="item.price == null ? '현재가 로딩 중' : ''"
+                  @click="openAddInput(item)"
+                >
+                  + 추가
+                </button>
+              </div>
+              <div v-else class="add-input-row">
+                <input
+                  v-model.number="addQuantity"
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  placeholder="수량"
+                  class="qty-input"
+                  @keyup.enter="confirmAddHolding(item)"
+                />
+                <button
+                  class="btn-confirm"
+                  :disabled="!addQuantity || addQuantity <= 0 || isSubmittingAdd"
+                  @click="confirmAddHolding(item)"
+                >
+                  {{ isSubmittingAdd ? '처리중' : '확인' }}
+                </button>
+                <button class="btn-cancel-mini" @click="closeAddInput">취소</button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -190,6 +219,46 @@ function goToChart(symbol) {
 function changeClass(value) {
   if (!value || value === 0) return 'flat'
   return value > 0 ? 'up' : 'down'
+}
+
+// ── 관심종목에 수량과 함께 추가 (마이페이지 포트폴리오 연동) ──
+const addTarget = ref(null)       // 현재 수량 입력 중인 종목
+const addQuantity = ref(null)
+const isSubmittingAdd = ref(false)
+
+function openAddInput(item) {
+  addTarget.value = item
+  addQuantity.value = null
+}
+
+function closeAddInput() {
+  addTarget.value = null
+  addQuantity.value = null
+}
+
+async function confirmAddHolding(item) {
+  if (!addQuantity.value || addQuantity.value <= 0) return
+
+  if (item.price == null) {
+    alert('현재가를 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+    return
+  }
+
+  const submittedQuantity = addQuantity.value   // ⭐ [신규 추가] 리셋 전에 값 보존
+
+  isSubmittingAdd.value = true
+  try {
+    const result = await store.addHoldingWithQuantity(item, submittedQuantity)
+    if (result.success) {
+      closeAddInput()
+      alert(`${item.name} ${submittedQuantity}개가 포트폴리오에 추가되었습니다.`)   // ⭐ [수정] addQuantity.value → submittedQuantity
+      router.push({ name: 'mypage', query: { tab: 'portfolio' } })
+    } else {
+      alert(result.message || '추가에 실패했습니다.')
+    }
+  } finally {
+    isSubmittingAdd.value = false
+  }
 }
 
 // ── 라이프사이클: 폴링 제어 ────────────────────────────
@@ -345,4 +414,60 @@ onUnmounted(() => {
   font-size: 13px;
   color: #9ca3af;
 }
+/* style 부분: 기존 .star-btn 관련 스타일 아래에 추가 */
+.add-cell { display: flex; justify-content: center; }
+.btn-add-holding {
+  padding: 4px 12px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.btn-add-holding:hover { background: #2563eb; color: #fff; }
+
+.add-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+.qty-input {
+  width: 64px;
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+.btn-confirm {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-confirm:disabled { background: #aaa; cursor: not-allowed; }
+.btn-cancel-mini {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+/* ⭐ [신규 추가] disabled 상태 스타일 */
+.btn-add-holding:disabled {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.btn-add-holding:disabled:hover { background: #fff; color: #9ca3af; }
 </style>

@@ -3,7 +3,7 @@
   <div class="donut-wrap">
     <div class="donut-layout">
       <div class="donut-svg-wrap">
-        <svg viewBox="0 0 200 200" width="180" height="180">
+        <svg viewBox="0 0 200 200" :width="size" :height="size">
           
           <g transform="rotate(-90 100 100)">
             <template v-for="(seg, i) in segments" :key="'circle-'+i">
@@ -36,12 +36,12 @@
               class="donut-segment-text"
               :style="{ opacity: hovered !== null && hovered !== i ? 0.3 : 1 }"
             >
-              {{ seg.category_display }}
+              {{ showRatioInLabel ? `${seg.category_display} ${seg.ratio}%` : seg.category_display }}
             </text>
           </template>
 
           <text x="100" y="95"  text-anchor="middle" class="donut-center-label">
-            {{ hovered !== null ? categories[hovered]?.category_display : '총 지출' }}
+            {{ hovered !== null ? categories[hovered]?.category_display : centerLabel }}
           </text>
           <text x="100" y="116" text-anchor="middle" class="donut-center-amount">
             {{ hovered !== null
@@ -73,9 +73,14 @@
 <script setup>
 import { computed, ref } from 'vue'
 
+// ⭐ [수정] colorMap, centerLabel props 추가 (기본값은 기존 동작과 100% 동일하게 유지)
 const props = defineProps({
-  categories:    { type: Array,  default: () => [] },
-  totalExpense:  { type: Number, default: 0 },
+  categories:       { type: Array,  default: () => [] },
+  totalExpense:     { type: Number, default: 0 },
+  colorMap:         { type: Object, default: null },
+  centerLabel:      { type: String, default: '총 지출' },
+  showRatioInLabel: { type: Boolean, default: false },   // ⭐ [신규 추가]
+  size:             { type: Number, default: 180 },        // ⭐ [신규 추가] 기존 기본값(180)과 동일
 })
 
 const hovered = ref(null)
@@ -84,21 +89,25 @@ const RADIUS      = 70
 const STROKE      = 26
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-/* 🔧 변경: 시인성을 높이기 위해 뚜렷하게 구분되는 비비드/파스텔 혼합 컬러로 변경 */
-const COLOR_MAP = {
-  food:         '#FF6B6B', // 빨강 (식비)
-  cafe:         '#FF9F43', // 주황 (카페/간식)
-  transport:    '#54A0FF', // 파랑 (교통)
-  shopping:     '#1DD1A1', // 민트 (쇼핑)
-  convenience:  '#F368E0', // 핑크 (편의점)
-  health:       '#10AC84', // 녹색 (의료/건강)
-  culture:      '#5F27CD', // 보라 (문화)
-  telecom:      '#0ABDE3', // 시안 (통신)
-  subscription: '#2E86DE', // 진파랑 (구독)
-  rent:         '#341F97', // 네이비 (주거)
-  transfer:     '#EE5253', // 짙은 빨강 (이체)
-  etc:          '#8395A7', // 회색 (기타)
+// 기존 소비 카테고리용 기본 컬러맵 (그대로 유지, 이름만 DEFAULT_COLOR_MAP으로 명확화)
+const DEFAULT_COLOR_MAP = {   // ⭐ [수정] COLOR_MAP → DEFAULT_COLOR_MAP으로 이름 변경
+  food:         '#FF6B6B',
+  cafe:         '#FF9F43',
+  transport:    '#54A0FF',
+  shopping:     '#1DD1A1',
+  convenience:  '#F368E0',
+  health:       '#10AC84',
+  culture:      '#5F27CD',
+  telecom:      '#0ABDE3',
+  subscription: '#2E86DE',
+  rent:         '#341F97',
+  transfer:     '#EE5253',
+  etc:          '#8395A7',
 }
+
+// ⭐ [신규 추가] colorMap prop이 있으면 그걸 쓰고, 없으면 기존 기본값 사용
+const COLOR_MAP = computed(() => props.colorMap || DEFAULT_COLOR_MAP)
+
 
 const segments = computed(() => {
   let offset = 0
@@ -108,7 +117,7 @@ const segments = computed(() => {
     const dash = (cat.ratio / 100) * CIRCUMFERENCE
     const seg  = { 
       ...cat,
-      color: COLOR_MAP[cat.category] || COLOR_MAP.etc, 
+      color: COLOR_MAP.value[cat.category] || COLOR_MAP.value.etc,   // ⭐ [수정]
       dash, 
       offset 
     }

@@ -6,6 +6,7 @@ class UserPortfolio(models.Model):
         ('SAVINGS', '예적금'),
         ('STOCKS', '주식'),
         ('CRYPTO', '크립토'),
+        ('CASH', '현금'),
     ]
     
     CURRENCY_CHOICES = [

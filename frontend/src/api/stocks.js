@@ -64,3 +64,9 @@ export const getStockDashboard = (tab, offset, count) => {
     params: { tab, offset, count }
   })
 }
+
+// ⭐ [신규 추가] 주식 보유 내역을 portfolio 앱(UserPortfolio)에 등록
+// 마이페이지 포트폴리오 탭에 표시되는 주식 자산을 추가하는 API
+// payload 예시: { asset_code: 'AAPL', name: 'Apple Inc.', market: 'NASDAQ', quantity: 10, purchase_price: 150.0 }
+export const addStockHolding = (payload) =>
+  axios.post('/api/portfolio/stocks/add/', payload)
