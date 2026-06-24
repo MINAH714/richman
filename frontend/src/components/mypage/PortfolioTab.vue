@@ -99,30 +99,25 @@
         </div>
       </section>
 
-      <section class="portfolio-items">
+      <section class="portfolio-items outer-section-card">
         <div class="section-header">
           <h3>나의 예적금 포트폴리오</h3>
           <router-link to="/finlife" class="link-more">더 둘러보기</router-link>
         </div>
 
-        <div v-if="assets.savings.length === 0" class="empty-state card">
+        <div v-if="assets.savings.length === 0" class="empty-state">
           <i class="ti ti-pig-money"></i>
           <p>아직 가입한 예적금 상품이 없습니다.</p>
           <router-link to="/finlife" class="btn-primary">상품 찾아보기</router-link>
         </div>
 
         <div v-else class="product-grid">
-          <!-- ⭐ [수정] 우측 상단 삭제 버튼 추가 -->
           <div 
             v-for="product in assets.savings" 
             :key="product.id"
-            class="product-card card"
+            class="product-card-inner"
           >
-            <button class="btn-delete-asset" @click.stop="handleDeleteItem(product.id)" title="삭제">
-              ✕
-            </button>
-
-            <!-- ⭐ [신규 추가] -->
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(product.id)" title="삭제">✕</button>
             <div class="product-header">
               <div class="icon-box-small"><i class="ti ti-coin"></i></div>
               <span class="bank-badge">{{ product.brokerage }}</span>
@@ -142,13 +137,13 @@
       </section>
 
       <!-- ⭐ [신규 추가] 나의 주식 포트폴리오 섹션 -->
-      <section class="portfolio-items">
+      <section class="portfolio-items outer-section-card">
         <div class="section-header">
           <h3>나의 주식 포트폴리오</h3>
           <router-link to="/stocks/watchlist" class="link-more">대시보드로 이동</router-link>
         </div>
 
-        <div v-if="assets.stocks.length === 0" class="empty-state card">
+        <div v-if="assets.stocks.length === 0" class="empty-state">
           <i class="ti ti-chart-candle"></i>
           <p>아직 보유한 주식이 없습니다.</p>
           <router-link to="/stocks/watchlist" class="btn-primary">종목 찾아보기</router-link>
@@ -158,12 +153,9 @@
           <div
             v-for="stock in assets.stocks"
             :key="stock.id"
-            class="product-card card"
+            class="product-card-inner"
           >
-            <button class="btn-delete-asset" @click.stop="handleDeleteItem(product.id)" title="삭제">
-              ✕
-            </button>
-
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(stock.id)" title="삭제">✕</button>
             <div class="product-header">
               <div class="icon-box-small stock-icon-small"><i class="ti ti-chart-candle"></i></div>
               <span class="bank-badge stock-badge">{{ stock.brokerage }}</span>
@@ -179,14 +171,7 @@
                 <span>보유 수량</span>
                 <template v-if="editingStockId === stock.id">
                   <div class="qty-edit-group" @click.stop>
-                    <input
-                      v-model.number="editQuantity"
-                      type="number"
-                      min="0.0001"
-                      step="0.0001"
-                      class="qty-edit-input"
-                      @keyup.enter="saveEditQuantity(stock)"
-                    />
+                    <input v-model.number="editQuantity" type="number" min="0.0001" step="0.0001" class="qty-edit-input" @keyup.enter="saveEditQuantity(stock)" />
                     <button class="btn-qty-save" @click="saveEditQuantity(stock)">✓</button>
                     <button class="btn-qty-cancel" @click="cancelEditQuantity">✕</button>
                   </div>
@@ -894,5 +879,30 @@ onMounted(() => {
 }
 .donut-center-wrap :deep(.donut-layout) {
   justify-content: center;
+}
+/* ⭐ [신규 추가] 예적금/주식 전체를 감싸는 바깥 큰 카드 */
+.outer-section-card {
+  background: var(--color-bg-card, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+/* ⭐ [수정] 기존 .product-card(바깥 카드 스타일)를 안쪽 카드용(.product-card-inner)으로 대체 */
+.product-card-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-page, #f8fafc);   /* 바깥 카드와 구분되도록 살짝 톤 다운된 배경 */
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.product-card-inner:hover {
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 4px 10px -2px rgba(0,0,0,0.06);
 }
 </style>
