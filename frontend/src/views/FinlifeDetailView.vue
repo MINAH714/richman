@@ -63,23 +63,52 @@
           </div>
         </div>
 
+        <!-- 가입 액션 섹션 -->
         <div class="action-section">
-          <template v-if="authStore.isLoggedIn">
-            <button 
-              class="btn btn-primary btn-large" 
-              @click="handleJoin"
-              :disabled="isJoining"
+          <div class="join-links">
+
+            <a
+              :href="product.finlife_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-primary btn-large"
             >
-              <i class="ti ti-check" aria-hidden="true"></i>
-              {{ isJoining ? '가입 처리 중...' : '상품 가입하기' }}
-            </button>
-          </template>
-          <template v-else>
-            <div class="login-prompt">
-              <p>상품에 가입하려면 로그인이 필요합니다.</p>
-              <router-link to="/login" class="btn btn-outline">로그인</router-link>
+              <i class="ti ti-external-link" aria-hidden="true"></i>
+              금융상품 가입하기
+            </a>
+
+            <a
+              v-if="product.can_join_online && product.bank_home_url"
+              :href="resolvedBankUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline btn-large"
+            >
+              <i class="ti ti-building-bank" aria-hidden="true"></i>
+              {{ product.kor_co_nm }} 공식 홈페이지
+            </a>
+
+            <!-- 온라인 가입 불가 안내 -->
+            <div v-else-if="!product.can_join_online" class="offline-notice">
+              <i class="ti ti-info-circle"></i>
+              이 상품은 영업점 방문을 통해서만 가입할 수 있습니다.
             </div>
-          </template>
+
+          </div>
+
+          <!-- 비로그인이어도 외부 링크는 허용, 안내만 표시 -->
+          <p v-if="!authStore.isLoggedIn" class="login-hint">
+            <router-link to="/login">로그인</router-link> 후 관심상품으로 저장할 수 있습니다.
+          </p>
+          <button
+            v-else
+            class="btn-wishlist"
+            :class="{ active: isWishlisted }"
+            @click="toggleWishlist"
+          >
+            <i :class="isWishlisted ? 'ti ti-heart-filled' : 'ti ti-heart'"></i>
+            {{ isWishlisted ? '관심상품 저장됨' : '관심상품 저장' }}
+          </button>
         </div>
       </div>
 
@@ -88,10 +117,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { finlifeAPI } from '@/api/finlife'
+import { DEMO_PRODUCT_URL_MAP } from '@/constants/demoProductLinks'
 
 const route = useRoute()
 const router = useRouter()
@@ -99,14 +129,22 @@ const authStore = useAuthStore()
 
 const product = ref(null)
 const isLoading = ref(true)
-const isJoining = ref(false)
+const isWishlisted = ref(false)
 
 const productId = route.params.id
+
+const resolvedBankUrl = computed(() => {
+  if (!product.value) return null
+  const demoUrl = DEMO_PRODUCT_URL_MAP[product.value.fin_prdt_cd]
+  return demoUrl || product.value.bank_home_url
+})
 
 async function fetchProductDetail() {
   try {
     const { data } = await finlifeAPI.getProductDetail(productId)
     product.value = data
+    // 위시리스트 여부 체크 (API에 필드 있으면)
+    isWishlisted.value = data.is_wishlisted ?? false
   } catch (error) {
     console.error('상세 정보 로드 실패:', error)
     alert('상품 정보를 불러오지 못했습니다.')
@@ -116,22 +154,17 @@ async function fetchProductDetail() {
   }
 }
 
-async function handleJoin() {
-  if (!confirm(`[${product.value.fin_prdt_nm}] 상품에 가입하시겠습니까?`)) return
-
-  isJoining.value = true
+async function toggleWishlist() {
   try {
-    await finlifeAPI.joinProduct(productId)
-    alert('가입이 완료되었습니다. 마이페이지에서 확인하세요.')
-    router.push('/mypage')
-  } catch (error) {
-    if (error.response?.data?.error === '이미 가입된 상품입니다.') {
-      alert('이미 가입된 상품입니다.')
+    if (isWishlisted.value) {
+      await finlifeAPI.removeWishlist(productId)
+      isWishlisted.value = false
     } else {
-      alert('가입 처리 중 오류가 발생했습니다.')
+      await finlifeAPI.addWishlist(productId)
+      isWishlisted.value = true
     }
-  } finally {
-    isJoining.value = false
+  } catch (error) {
+    alert('처리 중 오류가 발생했습니다.')
   }
 }
 
@@ -172,17 +205,26 @@ onMounted(() => {
 .info-text strong { display: block; font-size: 0.9rem; color: var(--color-text-primary); margin-bottom: 4px; }
 .info-text p { font-size: 0.9rem; color: var(--color-text-secondary); line-height: 1.5; margin: 0; }
 
-.action-section { text-align: center; padding-top: 16px; }
+/* 액션 섹션 */
+.action-section { text-align: center; padding-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.join-links { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: var(--radius-md); font-size: 0.95rem; font-weight: 600; font-family: var(--font-main); text-decoration: none; cursor: pointer; border: none; transition: all 0.15s; }
 .btn-primary { background: var(--color-primary); color: white; }
-.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
-.btn-primary:disabled { background: var(--color-text-tertiary); cursor: not-allowed; }
-.btn-large { width: 100%; max-width: 320px; padding: 16px; font-size: 1.05rem; }
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-large { width: 100%; max-width: 360px; padding: 16px; font-size: 1.05rem; }
 .btn-outline { background: var(--color-bg-card); color: var(--color-text-primary); border: 0.5px solid var(--color-border-strong); }
 .btn-outline:hover { background: var(--color-bg-secondary); }
 
-.login-prompt { background: var(--color-bg-secondary); padding: 24px; border-radius: var(--radius-md); border: 0.5px dashed var(--color-border-strong); }
-.login-prompt p { margin: 0 0 16px; color: var(--color-text-secondary); font-size: 0.95rem; }
+.offline-notice { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--color-text-secondary); background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: 12px 20px; }
+.offline-notice i { font-size: 18px; flex-shrink: 0; }
+
+.login-hint { font-size: 0.85rem; color: var(--color-text-tertiary); margin: 0; }
+.login-hint a { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+
+.btn-wishlist { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0.5px solid var(--color-border-strong); border-radius: var(--radius-md); padding: 8px 20px; font-size: 0.85rem; font-weight: 500; font-family: var(--font-main); color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
+.btn-wishlist:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-wishlist.active { background: color-mix(in srgb, var(--color-primary) 8%, transparent); border-color: var(--color-primary); color: var(--color-primary); }
+.btn-wishlist i { font-size: 16px; }
 
 .skeleton-container { background: var(--color-bg-card); border-radius: var(--radius-lg); padding: 3rem; }
 .skeleton { background: linear-gradient(90deg, #eee 25%, #e0e0e0 50%, #eee 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: var(--radius-md); }
