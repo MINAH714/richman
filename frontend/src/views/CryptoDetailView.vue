@@ -1,8 +1,7 @@
-<!-- frontend/src/views/CryptoDetailView.vue -->
+<!-- src/views/CryptoDetailView.vue -->
 <template>
   <div class="detail-container">
 
-    <!-- ── 헤더 ───────────────────────────────────────────── -->
     <header class="detail-header">
       <button class="back-btn" @click="goBack">← BACK</button>
       <div class="coin-title">
@@ -19,11 +18,22 @@
       </button>
     </header>
 
-    <!-- ── 메인 그리드 ─────────────────────────────────────── -->
     <div class="content-grid">
 
-      <!-- 캔들 차트 -->
       <section class="chart-section">
+
+        <!-- 지표 토글 -->
+        <div class="chart-toolbar">
+          <div class="indicator-toggles">
+            <label v-for="ind in indicators" :key="ind.key" class="toggle-label">
+              <input type="checkbox" v-model="ind.visible" />
+              <span :style="{ color: ind.color, fontWeight: ind.visible ? 'bold' : 'normal' }">
+                {{ ind.label }}
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div v-if="isLoading" class="chart-placeholder">
           <span>차트 데이터 로딩 중...</span>
         </div>
@@ -39,10 +49,8 @@
         />
       </section>
 
-      <!-- 우측 사이드 -->
       <aside class="info-section">
 
-        <!-- 현재가 정보 -->
         <div class="info-card">
           <h3>현재가 정보</h3>
           <div v-if="isLoading" class="info-loading">불러오는 중...</div>
@@ -83,7 +91,6 @@
           <div v-else class="info-loading">데이터를 불러오는 중...</div>
         </div>
 
-        <!-- 코인 기본 정보 -->
         <div class="info-card">
           <h3>코인 정보</h3>
           <div class="info-row">
@@ -104,7 +111,6 @@
           </div>
         </div>
 
-        <!-- ── 감성 분석 카드 ─────────────────────────────── -->
         <div class="info-card sentiment-card">
           <div class="sentiment-card-header">
             <h3>뉴스 감성 분석</h3>
@@ -113,12 +119,10 @@
             </span>
           </div>
 
-          <!-- 로딩 스켈레톤 -->
           <div v-if="sentimentLoading" class="sentiment-skeleton">
             <div class="skel-bar" v-for="n in 3" :key="n" />
           </div>
 
-          <!-- 결과 있음 -->
           <div v-else-if="hasResult" class="sentiment-result">
             <p class="sentiment-summary">{{ sentiment.summary }}</p>
 
@@ -146,12 +150,10 @@
             </div>
           </div>
 
-          <!-- 빈 상태 -->
           <div v-else class="sentiment-empty">
             <span>📡 분석 데이터 없음</span>
           </div>
 
-          <!-- 액션 버튼 행 -->
           <div class="sentiment-actions">
             <button
               class="sentiment-run-btn"
@@ -199,6 +201,55 @@ const isLoading = ref(true)
 const ticker    = ref(null)
 const candles   = ref([])
 
+// ── 지표 토글 (Stock 페이지와 동일 구성) ──────────────────
+const indicators = ref([
+  { key: 'ma5',  label: 'MA5',      color: '#f59e0b', visible: true  },
+  { key: 'ma20', label: 'MA20',     color: '#10b981', visible: true  },
+  { key: 'ma60', label: 'MA60',     color: '#8b5cf6', visible: false },
+  { key: 'bb',   label: '볼린저밴드', color: '#94a3b8', visible: false },
+])
+
+// ── 이동평균선 계산 ────────────────────────────────────────
+function calcMA(values, period) {
+  return values.map((_, idx) => {
+    if (idx < period - 1) return null
+    const slice = values.slice(idx - period + 1, idx + 1)
+    const sum = slice.reduce((a, b) => a + b, 0)
+    return sum / period
+  })
+}
+
+// ── 볼린저밴드 계산 (20일 기준, 표준편차 2) ─────────────────
+function calcBollinger(values, period = 20, mult = 2) {
+  const mid = calcMA(values, period)
+  const upper = []
+  const lower = []
+
+  values.forEach((_, idx) => {
+    if (idx < period - 1) {
+      upper.push(null)
+      lower.push(null)
+      return
+    }
+    const slice = values.slice(idx - period + 1, idx + 1)
+    const mean = mid[idx]
+    const variance = slice.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / period
+    const std = Math.sqrt(variance)
+    upper.push(mean + mult * std)
+    lower.push(mean - mult * std)
+  })
+
+  return { upper, mid, lower }
+}
+
+// ── 지표 데이터 (종가 기준) ─────────────────────────────────
+const closePrices = computed(() => candles.value.map(c => c.trade_price))
+
+const ma5  = computed(() => calcMA(closePrices.value, 5))
+const ma20 = computed(() => calcMA(closePrices.value, 20))
+const ma60 = computed(() => calcMA(closePrices.value, 60))
+const bollinger = computed(() => calcBollinger(closePrices.value, 20, 2))
+
 // ── ApexCharts ────────────────────────────────────────────
 const chartOptions = computed(() => ({
   chart: {
@@ -208,6 +259,8 @@ const chartOptions = computed(() => ({
     zoom: { enabled: true },
   },
   theme: { mode: 'light' },
+  colors: ['#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#94a3b8', '#94a3b8', '#94a3b8'],
+  stroke: { width: [1, 2, 2, 2, 1, 1, 1] },
   xaxis: {
     type: 'datetime',
     labels: { style: { fontFamily: 'IBM Plex Mono, monospace', fontSize: '11px' } },
@@ -226,15 +279,49 @@ const chartOptions = computed(() => ({
   },
   tooltip: { x: { format: 'yyyy-MM-dd' } },
   grid: { borderColor: '#e2ecf9' },
+  legend: { show: false },
 }))
 
-const chartSeries = computed(() => [{
-  name: marketId.value,
-  data: candles.value.map(c => ({
-    x: new Date(c.candle_date_time_kst),
-    y: [c.opening_price, c.high_price, c.low_price, c.trade_price],
-  })),
-}])
+const chartSeries = computed(() => {
+  const dates = candles.value.map(c => new Date(c.candle_date_time_kst))
+
+  const series = [{
+    name: marketId.value,
+    type: 'candlestick',
+    data: candles.value.map((c, i) => ({
+      x: dates[i],
+      y: [c.opening_price, c.high_price, c.low_price, c.trade_price],
+    })),
+  }]
+
+  if (indicators.value.find(i => i.key === 'ma5')?.visible) {
+    series.push({
+      name: 'MA5', type: 'line',
+      data: dates.map((d, i) => ({ x: d, y: ma5.value[i] })),
+    })
+  }
+  if (indicators.value.find(i => i.key === 'ma20')?.visible) {
+    series.push({
+      name: 'MA20', type: 'line',
+      data: dates.map((d, i) => ({ x: d, y: ma20.value[i] })),
+    })
+  }
+  if (indicators.value.find(i => i.key === 'ma60')?.visible) {
+    series.push({
+      name: 'MA60', type: 'line',
+      data: dates.map((d, i) => ({ x: d, y: ma60.value[i] })),
+    })
+  }
+  if (indicators.value.find(i => i.key === 'bb')?.visible) {
+    series.push(
+      { name: 'BB 상단', type: 'line', data: dates.map((d, i) => ({ x: d, y: bollinger.value.upper[i] })) },
+      { name: 'BB 중간', type: 'line', data: dates.map((d, i) => ({ x: d, y: bollinger.value.mid[i] })) },
+      { name: 'BB 하단', type: 'line', data: dates.map((d, i) => ({ x: d, y: bollinger.value.lower[i] })) },
+    )
+  }
+
+  return series
+})
 
 // ── 코인 상세 API ─────────────────────────────────────────
 async function fetchCoinDetail() {
@@ -250,7 +337,6 @@ async function fetchCoinDetail() {
   }
 }
 
-// ── 10초 폴링 ─────────────────────────────────────────────
 let pollingTimer = null
 
 async function pollTicker() {
@@ -274,7 +360,6 @@ const sentimentLoading   = ref(false)
 const sentimentAnalyzing = ref(false)
 const animatedScores     = ref({ positive: 0, neutral: 0, negative: 0 })
 
-// 결과 유무 판단
 const hasResult = computed(() =>
   sentiment.value.positive_score + sentiment.value.neutral_score + sentiment.value.negative_score > 0
 )
@@ -335,14 +420,12 @@ async function runSentiment() {
   }
 }
 
-// 게이지 행 정의
 const gaugeRows = [
   { key: 'positive', label: '긍정', icon: '😊', color: '#4ade80', gradient: 'linear-gradient(90deg,#166534,#4ade80)' },
   { key: 'neutral',  label: '중립', icon: '😐', color: '#94a3b8', gradient: 'linear-gradient(90deg,#334155,#94a3b8)' },
   { key: 'negative', label: '부정', icon: '😰', color: '#f87171', gradient: 'linear-gradient(90deg,#7f1d1d,#f87171)' },
 ]
 
-// 도미넌트
 const dominant = computed(() => {
   const s = sentiment.value
   if (s.positive_score >= s.neutral_score && s.positive_score >= s.negative_score) return 'positive'
@@ -370,7 +453,6 @@ const formattedSentimentAt = computed(() => {
   } catch { return '' }
 })
 
-// ── 라이프사이클 ──────────────────────────────────────────
 function goBack() { router.push('/crypto') }
 
 onMounted(async () => {
@@ -385,7 +467,6 @@ onMounted(async () => {
 
 onUnmounted(() => { clearInterval(pollingTimer) })
 
-// ── 포맷 헬퍼 ────────────────────────────────────────────
 function formatPrice(price) {
   if (price == null) return '-'
   return price >= 100
@@ -418,7 +499,6 @@ function changeClass(change) {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-/* ── 헤더 ── */
 .detail-header {
   display: flex;
   align-items: center;
@@ -465,7 +545,6 @@ function changeClass(change) {
 .fav-btn.active { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
 .fav-btn:hover  { opacity: 0.8; }
 
-/* ── 그리드 ── */
 .content-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -477,6 +556,26 @@ function changeClass(change) {
   border-radius: 8px;
   padding: 16px;
 }
+
+/* ── 지표 토글 툴바 (신규) ── */
+.chart-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.indicator-toggles { display: flex; gap: 14px; }
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #475569;
+}
+.toggle-label input { accent-color: #2563eb; }
+
 .chart-placeholder {
   height: 500px;
   display: flex;
@@ -486,7 +585,6 @@ function changeClass(change) {
 }
 .info-section { display: flex; flex-direction: column; gap: 16px; }
 
-/* ── 공통 카드 ── */
 .info-card {
   background: white;
   border: 1px solid #e2ecf9;
@@ -518,9 +616,7 @@ function changeClass(change) {
 .down { color: #3b82f6; }
 .flat { color: #6b7280; }
 
-/* ── 감성 분석 카드 ── */
 .sentiment-card { padding: 18px 20px; }
-
 .sentiment-card-header {
   display: flex;
   align-items: center;
@@ -535,11 +631,7 @@ function changeClass(change) {
   letter-spacing: 0;
   text-transform: none;
 }
-
-/* 결과 래퍼 */
 .sentiment-result { display: flex; flex-direction: column; }
-
-/* 요약 */
 .sentiment-summary {
   font-size: 12px;
   color: #64748b;
@@ -547,8 +639,6 @@ function changeClass(change) {
   line-height: 1.5;
   font-style: italic;
 }
-
-/* 도미넌트 칩 */
 .sentiment-dominant {
   display: inline-flex;
   align-items: center;
@@ -564,8 +654,6 @@ function changeClass(change) {
 .chip-neu { background: rgba(148,163,184,0.12); border: 1px solid rgba(148,163,184,0.25); color: #64748b; }
 .chip-neg { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25); color: #dc2626; }
 .dominant-pct { opacity: 0.75; }
-
-/* 게이지 */
 .sentiment-gauges { display: flex; flex-direction: column; gap: 8px; }
 .sg-row  { display: flex; align-items: center; gap: 7px; }
 .sg-icon { font-size: 13px; flex-shrink: 0; }
@@ -598,16 +686,12 @@ function changeClass(change) {
   color: rgba(255,255,255,0.95);
   white-space: nowrap;
 }
-
-/* 빈 상태 */
 .sentiment-empty {
   text-align: center;
   padding: 12px 0;
   font-size: 12px;
   color: #94a3b8;
 }
-
-/* 스켈레톤 */
 .sentiment-skeleton { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
 .skel-bar {
   height: 22px;
@@ -623,8 +707,6 @@ function changeClass(change) {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
-/* 액션 */
 .sentiment-actions {
   display: flex;
   align-items: center;
@@ -658,8 +740,6 @@ function changeClass(change) {
   transition: color 0.15s;
 }
 .sentiment-full-link:hover { color: #3b6fd4; }
-
-/* 점 애니메이션 */
 .btn-analyzing { display: inline-flex; align-items: center; gap: 5px; }
 .btn-dots { display: inline-flex; gap: 2px; align-items: center; }
 .btn-dots i {
