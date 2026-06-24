@@ -20,7 +20,7 @@
           {{ totalOf(day).toLocaleString() }}
         </span>
         <div v-if="totalOf(day) === 0 && isPast(day)" class="calendar__no-spend-center">
-          <span class="no-spend-mark">0</span>
+          <img src="@/assets/images/no-spend.png" alt="무지출 달성" class="no-spend-img" />
         </div>
       </div>
     </div>
@@ -135,5 +135,28 @@ const isPast   = (day) =>
   font-size: .68rem;
   font-weight: 700;
   color: #4c4546;
+}
+/* frontend/src/components/.../Calendar.vue (해당 파일의 스타일 영역) */
+
+/* 🔧 추가: 무지출 이미지 스타일 (달력 칸 크기에 맞춰 px 조절) */
+.no-spend-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain; /* 이미지가 찌그러지지 않게 비율 유지 */
+  margin: 0 auto;
+  display: block;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; /* (선택) 뿅 하고 나타나는 귀여운 애니메이션 */
+}
+
+/* (선택) 무지출 이미지 등장 애니메이션 */
+@keyframes popIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

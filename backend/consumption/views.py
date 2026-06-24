@@ -1,4 +1,4 @@
-# consumption/views.py
+# backend/consumption/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +10,6 @@ import datetime
 from collections import defaultdict
 
 
-# consumption/views.py — CalendarMonthlyView 수정
 class CalendarMonthlyView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -34,8 +33,9 @@ class CalendarMonthlyView(APIView):
                 daily_totals[date_key] += tx.amount
 
         return Response({'year': year, 'month': month, 'daily_totals': dict(daily_totals)})
+
+
 class CalendarDayDetailView(APIView):
-    """GET /api/consumption/calendar/2025-06-14/"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request, date_str):
@@ -59,9 +59,6 @@ class CalendarDayDetailView(APIView):
 
 
 class TransactionCategoryUpdateView(APIView):
-    """PATCH /api/consumption/transactions/<pk>/category/
-       이체 → 지출 카테고리 전환
-    """
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
@@ -74,16 +71,16 @@ class TransactionCategoryUpdateView(APIView):
         if not new_category:
             return Response({'error': 'category 필드가 필요합니다.'}, status=400)
 
-        # 최초 전환 시 원래 타입 기록
         if not tx.original_type:
             tx.original_type = tx.transaction_type
 
         tx.category         = new_category
-        tx.transaction_type = 'expense'   # 지출로 전환
+        tx.transaction_type = 'expense'
         tx.save()
 
         return Response(TransactionSerializer(tx).data)
-    
+
+
 class InsightView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -122,7 +119,6 @@ class InsightView(APIView):
                 'ratio':            ratio,
             })
 
-        # 🔧 수정: 고정지출도 "선택된 월"만 조회 (year/month 필터 추가)
         fixed_qs = Transaction.objects.filter(
             user=request.user,
             is_fixed=True,
@@ -141,15 +137,22 @@ class InsightView(APIView):
             'fixed': {'list': fixed_list, 'total': fixed_total},
         })
 
+
 class InsightTrendView(APIView):
-    """GET /api/consumption/insight/trend/?year=2025&month=6
-       선택한 월 기준 최근 3개월 추이
+    """GET /api/consumption/insight/trend/?year=2025&month=6&category=food
+       선택한 월 기준 최근 3개월 추이 (1일 ~ 현재 일수까지만 MTD 비교)
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        base_year  = int(request.query_params.get('year',  datetime.date.today().year))
-        base_month = int(request.query_params.get('month', datetime.date.today().month))
+        today = datetime.date.today()
+        base_year  = int(request.query_params.get('year',  today.year))
+        base_month = int(request.query_params.get('month', today.month))
+        category = request.query_params.get('category', None)
+        
+        # 🔧 수정: 정확한 비교를 위해 무조건 현재 날짜의 '일(day)'까지만 합산
+        current_day = today.day
+        
         result = []
 
         for i in range(2, -1, -1):
@@ -159,21 +162,27 @@ class InsightTrendView(APIView):
                 month += 12
                 year  -= 1
 
-            total = Transaction.objects.filter(
+            qs = Transaction.objects.filter(
                 user=request.user,
                 transacted_at__year=year,
                 transacted_at__month=month,
+                transacted_at__day__lte=current_day, # 🔧 핵심: 각 월의 1일 ~ current_day까지만 필터링
                 transaction_type='expense',
-            ).aggregate(Sum('amount'))['amount__sum'] or 0
+            )
+            
+            if category:
+                qs = qs.filter(category=category)
 
+            total = qs.aggregate(Sum('amount'))['amount__sum'] or 0
             result.append({'year': year, 'month': month, 'total': total})
 
-        return Response({'trend': result})
-    
+        return Response({
+            'trend': result,
+            'day_limit': current_day # 프론트엔드 기준일자 명시용
+        })
+
+
 class SettleTargetToggleView(APIView):
-    """PATCH /api/consumption/transactions/<pk>/settle-target/
-       '정산 대기' 상태로 전환/해제
-    """
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
@@ -183,7 +192,6 @@ class SettleTargetToggleView(APIView):
             return Response({'error': '없는 내역입니다.'}, status=404)
 
         tx.is_settle_target = not tx.is_settle_target
-        # 정산 대상에서 해제하면 관련 데이터 초기화
         if not tx.is_settle_target:
             tx.is_settled            = False
             tx.settle_people_count   = None
@@ -195,10 +203,6 @@ class SettleTargetToggleView(APIView):
 
 
 class SettleCalculateView(APIView):
-    """PATCH /api/consumption/transactions/<pk>/settle-calculate/
-       body: { "people_count": 4 }
-       총액 ÷ 인원수 → 인당 금액 산출, '받을 돈' 갱신
-    """
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
@@ -212,8 +216,8 @@ class SettleCalculateView(APIView):
             return Response({'error': 'people_count는 2명 이상이어야 합니다.'}, status=400)
 
         people_count = int(people_count)
-        per_person   = tx.amount // people_count       # 인당 부담액 (내림)
-        my_receive   = per_person * (people_count - 1)  # 내가 결제했으니, 나머지 인원분을 받음
+        per_person   = tx.amount // people_count
+        my_receive   = per_person * (people_count - 1)
 
         tx.settle_people_count = people_count
         tx.settle_per_person   = per_person
@@ -224,9 +228,6 @@ class SettleCalculateView(APIView):
 
 
 class SettleCompleteView(APIView):
-    """PATCH /api/consumption/transactions/<pk>/settle-complete/
-       정산 완료 체크 → 통계에서 받은 금액 제외 반영
-    """
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, pk):
@@ -238,16 +239,13 @@ class SettleCompleteView(APIView):
         if not tx.settle_amount:
             return Response({'error': '정산 금액을 먼저 계산해주세요.'}, status=400)
 
-        tx.is_settled = not tx.is_settled   # 토글 (체크/체크 해제)
+        tx.is_settled = not tx.is_settled
         tx.save()
 
         return Response(TransactionSerializer(tx).data)
 
 
 class SettleDashboardView(APIView):
-    """GET /api/consumption/settle/dashboard/
-       정산 대기중 / 완료된 항목 + 받을 돈 합계
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -272,11 +270,9 @@ class SettleDashboardView(APIView):
                 'total': settled_total,
             },
         })
-    
+
+
 class SettleRemoveView(APIView):
-    """DELETE /api/consumption/transactions/<pk>/settle-remove/
-       정산 대상에서 완전히 제외 (대기중/완료 무관하게 초기화)
-    """
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
