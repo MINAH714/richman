@@ -1,9 +1,18 @@
 <template>
   <nav class="navbar">
     <div class="nav-inner">
-      <router-link to="/" class="nav-logo">
-        <i class="ti ti-pig-money" aria-hidden="true"></i>
-        Richman
+      <router-link to="/" class="nav-logo" style="display: flex; align-items: center; gap: 8px; padding: 4px 0; text-decoration: none; user-select: none;">
+        <!-- 1. 로고 이미지 심볼 -->
+        <img 
+          src="../assets/logo.png" 
+          alt="Richman" 
+          style="height: 38px; width: auto; object-fit: contain;" 
+        />
+        
+        <!-- 2. [추가] 내브바 타이포그래피 로고 텍스트 (자간 바짝 줄이고 마침표 블루 포인트) -->
+        <span style="font-family: 'Hanken Grotesk', sans-serif; font-weight: 900; font-size: 1.4rem; color: #191c1d; letter-spacing: -0.05em; line-height: 1;">
+          Richman<span style="color: #0050cc; margin-left: 1px;">.</span>
+        </span>
       </router-link>
 
       <ul class="nav-menu">
