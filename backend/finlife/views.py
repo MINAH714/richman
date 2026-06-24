@@ -5,8 +5,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+
 from .models import DepositProduct, DepositOption
 from .serializers import DepositProductSerializer
+
+# 💡 새로 만든 포트폴리오 모델 임포트
+from portfolio.models import UserPortfolio 
 
 # .env 파일에서 FSS_API_KEY 값을 가져옵니다.
 API_KEY = os.getenv('FSS_API_KEY')
@@ -18,11 +22,9 @@ def save_products(request):
     """
     F1303-1: 금감원 API로부터 예금/적금 데이터를 가져와 DB에 저장 (중복 방지)
     """
-    # API 키 누락 방지 예외 처리
     if not API_KEY:
         return Response({"error": "서버에 API 키(FSS_API_KEY)가 설정되지 않았습니다."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # 예금과 적금 데이터를 모두 가져오기 위한 엔드포인트 리스트
     endpoints = [
         f"{BASE_URL}/depositProductsSearch.json", # 정기예금
         f"{BASE_URL}/savingProductsSearch.json"   # 적금
@@ -41,7 +43,6 @@ def save_products(request):
         base_list = data.get('result', {}).get('baseList', [])
         option_list = data.get('result', {}).get('optionList', [])
 
-        # 1. Base 상품 저장 (update_or_create로 중복 방지 및 갱신 처리)
         for base in base_list:
             DepositProduct.objects.update_or_create(
                 fin_prdt_cd=base.get('fin_prdt_cd'),
@@ -55,7 +56,6 @@ def save_products(request):
                 }
             )
 
-        # 2. Option 금리 저장
         for option in option_list:
             product = DepositProduct.objects.filter(fin_prdt_cd=option.get('fin_prdt_cd')).first()
             if product:
@@ -106,20 +106,39 @@ def product_detail(request, fin_prdt_cd):
 @permission_classes([IsAuthenticated])
 def join_product(request, fin_prdt_cd):
     """
-    F1303-3(가입): User 모델의 financial_products(문자열 필드)에 상품 코드 추가
+    F1303-3(가입): UserPortfolio(통합 포트폴리오 DB)에 100만 원 예치 내역 추가
     """
     user = request.user
     
-    # 쉼표 기준 리스트 파싱
-    current_products = user.financial_products or ""
-    product_list = [p.strip() for p in current_products.split(',') if p.strip()]
-
-    if fin_prdt_cd in product_list:
+    # 1. 중복 가입 방지 (현재 '보유중(is_active=True)'인 동일 상품이 있는지 체크)
+    if UserPortfolio.objects.filter(user=user, asset_type='SAVINGS', asset_code=fin_prdt_cd, is_active=True).exists():
         return Response({"error": "이미 가입된 상품입니다."}, status=status.HTTP_400_BAD_REQUEST)
     
-    # 신규 상품 코드 추가 후 쉼표로 다시 결합
-    product_list.append(fin_prdt_cd)
-    user.financial_products = ",".join(product_list)
-    user.save()
+    # 2. 가입하려는 예적금 상품 정보 조회
+    try:
+        product = DepositProduct.objects.get(fin_prdt_cd=fin_prdt_cd)
+    except DepositProduct.DoesNotExist:
+        return Response({"error": "존재하지 않는 상품입니다."}, status=status.HTTP_404_NOT_FOUND)
+
+    # 3. 해당 상품의 최고 우대 금리 찾기 (보유 자산 평가용)
+    best_rate = None
+    best_option = product.options.order_by('-intr_rate2').first()
+    if best_option:
+        best_rate = best_option.intr_rate2 or best_option.intr_rate
+
+    # 4. 궁극의 포트폴리오 DB에 데이터 삽입!
+    UserPortfolio.objects.create(
+        user=user,
+        asset_type='SAVINGS',           # 자산 종류: 예적금
+        asset_code=product.fin_prdt_cd, # 상품 코드
+        asset_name=product.fin_prdt_nm, # 상품명
+        brokerage=product.kor_co_nm,    # 금융사 (은행명)
+        currency='KRW',                 # 통화: 원화
+        invested_amount=1000000,        # 💰 가입 금액: 100만 원 (고정)
+        interest_rate=best_rate,        # 📈 최고 우대 금리
+        is_active=True                  # 보유 상태
+    )
     
-    return Response({"message": "상품 가입이 완료되었습니다."}, status=status.HTTP_200_OK)
+    return Response({
+        "message": f"[{product.fin_prdt_nm}] 상품 가입 완료! (100만원 예치)",
+    }, status=status.HTTP_200_OK)
