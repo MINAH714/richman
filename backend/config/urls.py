@@ -30,6 +30,6 @@ urlpatterns = [
     path('api/bankmap/', include('bankmap.urls')),
     path('api/consumption/', include('consumption.urls')),
     path('api/board/', include('board.urls')),
-    # path('api/commodities/', include('commodities.urls')),
+    path('api/commodities/', include('commodities.urls')),
 
 ]

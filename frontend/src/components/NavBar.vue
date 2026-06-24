@@ -41,6 +41,9 @@
             <li>
               <router-link to="/stocks/prediction" class="dropdown-link">AI 예측</router-link>
             </li>
+            <li>
+              <router-link to="/commodities" class="dropdown-link">금/은 현물 시세</router-link>
+            </li>
           </ul>
         </li>
 

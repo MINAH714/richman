@@ -179,11 +179,11 @@ const routes = [
   component: () => import('@/views/BoardDetailView.vue'),
 },
 
-  // {
-  //     path: '/commodities',
-  //     name: 'commodities',
-  //     component: () => import('@/views/CommoditiesView.vue'),
-  //   },
+  {
+      path: '/commodities',
+      name: 'commodities',
+      component: () => import('@/views/CommoditiesView.vue'),
+    },
   
   // ── 404 (항상 가장 마지막에 위치해야 함) ────────────────
   {
