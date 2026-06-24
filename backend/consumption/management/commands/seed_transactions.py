@@ -63,11 +63,22 @@ class Command(BaseCommand):
         # ── 유저 가져오기 ─────────────────────────────────
         user, created = User.objects.get_or_create(
             username='ssafy',
-            defaults={'nickname': '김싸피', 'email': 'ssafy@test.com'}
+            defaults={'nickname': '김싸피', 'email': 'ssafy@test.com', 'age': 26}
         )
         if created:
             user.set_password('ssafy1234!')
             user.save()
+        else:
+            # 이미 존재하는 유저라면 비어있는 필드만 보정   
+            updated = False
+            if not user.nickname:
+                user.nickname = '김싸피'
+                updated = True
+            if not user.age:
+                user.age = 26
+                updated = True
+            if updated:
+                user.save()
 
         # ── 기존 데이터 초기화 ────────────────────────────
         deleted, _ = Transaction.objects.filter(user=user).delete()
