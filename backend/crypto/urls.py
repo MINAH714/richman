@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("markets/",                                    views.MarketListView.as_view()),
     path("markets/sync/",                               views.MarketCacheClearView.as_view()),
+    path("compare/",                                    views.CryptoCompareView.as_view()),
     path("coins/<str:market>/",                         views.CoinDetailView.as_view()),
     path("watchlist/",                                  views.WatchlistCoinListView.as_view()),
     path("watchlist/<str:coin_symbol>/",                views.WatchlistCoinDeleteView.as_view()),

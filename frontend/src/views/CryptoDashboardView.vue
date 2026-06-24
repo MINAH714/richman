@@ -26,6 +26,9 @@
 
     <div class="toolbar">
       <input v-model="cryptoStore.searchQuery" type="text" placeholder="코인명, 심볼 검색..." class="search-input" />
+      <router-link to="/crypto/compare" class="compare-link">
+        📊 코인 비교하기
+      </router-link>
       <button class="sync-btn" :disabled="isSyncing" @click="handleSync">
         {{ isSyncing ? '동기화 중...' : '🔄 마켓 동기화' }}
       </button>
@@ -226,6 +229,24 @@ async function confirmAddHolding(coin) {
 /* ── 정렬 헬퍼 ── */
 .text-right { text-align: right !important; }
 .text-center { text-align: center !important; }
+
+/* ── 코인 비교하기 링크 ── */
+.compare-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1rem;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.compare-link:hover { background: #2563eb; color: #fff; }
 
 /* ── 포트폴리오 추가 UI (StockWatchlistView와 동일 패턴) ── */
 .add-cell { display: flex; justify-content: center; }

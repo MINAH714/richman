@@ -7,6 +7,13 @@ export const cryptoAPI = {
     return axios.get('/api/crypto/markets/')
   },
 
+  // ── 코인 비교 (최대 3개) ─────────────────────────────────
+  compareCoins(markets) {
+    return axios.get('/api/crypto/compare/', {
+      params: { markets: markets.join(',') }
+    })
+  },
+
   // ── 코인 상세 (캔들 포함) ────────────────────────────────
   getCoinDetail(market) {
     return axios.get(`/api/crypto/coins/${market}/`)

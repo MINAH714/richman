@@ -1,5 +1,5 @@
 // frontend/src/api/finlife.js
-import axios from './axios'
+import axios from '@/api/axios'
 
 export const finlifeAPI = {
   getProducts(bank = '') {
@@ -16,5 +16,8 @@ export const finlifeAPI = {
   joinProduct(finPrdtCd) {
     // /finlife/ -> /api/finlife/ 로 변경
     return axios.post(`/api/finlife/${finPrdtCd}/join/`)
+  },
+  saveProducts() {
+    return axios.get('/api/finlife/save/') 
   }
 }

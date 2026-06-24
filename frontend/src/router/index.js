@@ -77,6 +77,11 @@ const routes = [
     name: 'crypto-buzz',
     component: () => import('@/views/CryptoBuzzView.vue'),
   },
+  {
+    path: '/crypto/compare',
+    name: 'crypto-compare',
+    component: () => import('@/views/CryptoCompareView.vue'),
+  },
 
   // ── 감성 분석 (/crypto/:market 보다 위에 위치) ─────────
   {

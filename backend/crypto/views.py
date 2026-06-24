@@ -437,3 +437,83 @@ class CoinSentimentCachedView(APIView):
                 {"error": "아직 분석된 데이터가 없습니다. 분석을 먼저 실행하세요."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        
+class CryptoCompareView(APIView):
+    """
+    GET /api/crypto/compare/?markets=KRW-BTC,KRW-ETH,KRW-XRP
+
+    여러 코인의 실시간 시세 + 30일 캔들을 한 번에 반환 (최대 3개)
+    """
+    permission_classes = [AllowAny]
+    MAX_COINS = 3
+
+    def get(self, request):
+        markets_param = request.query_params.get("markets", "")
+        requested = [m.strip().upper() for m in markets_param.split(",") if m.strip()]
+
+        if not requested:
+            return Response(
+                {"error": "markets 파라미터가 필요합니다. 예: ?markets=KRW-BTC,KRW-ETH"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(requested) > self.MAX_COINS:
+            return Response(
+                {"error": f"최대 {self.MAX_COINS}개까지 비교할 수 있습니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        all_markets = get_all_krw_markets()
+        meta_map = {m["market"]: m for m in all_markets}
+
+        valid_markets = [m for m in requested if m in meta_map]
+        invalid_markets = [m for m in requested if m not in meta_map]
+
+        if not valid_markets:
+            return Response(
+                {"error": "유효한 마켓 코드가 없습니다.", "invalid": invalid_markets},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tickers = get_ticker(valid_markets)
+        ticker_map = {t["market"]: t for t in tickers}
+
+        coins = []
+        for market in valid_markets:
+            meta = meta_map.get(market, {})
+            ticker = ticker_map.get(market, {})
+
+            try:
+                raw_candles = get_candles_days(market, count=30)
+            except Exception:
+                raw_candles = []
+
+            # Upbit는 최신순으로 내려주므로 차트용으로 날짜순(오름차순) 정렬
+            candles = [
+                {
+                    "date": c.get("candle_date_time_kst", "")[:10],
+                    "trade_price": c.get("trade_price"),
+                }
+                for c in reversed(raw_candles)
+            ]
+
+            coins.append({
+                "market": market,
+                "coin_symbol": market.split("-")[1],
+                "korean_name": meta.get("korean_name", market),
+                "english_name": meta.get("english_name", ""),
+                "trade_price": ticker.get("trade_price"),
+                "change": ticker.get("change"),
+                "change_rate": ticker.get("change_rate"),
+                "change_price": ticker.get("signed_change_price"),
+                "acc_trade_price_24h": ticker.get("acc_trade_price_24h"),
+                "high_price": ticker.get("high_price"),
+                "low_price": ticker.get("low_price"),
+                "candles": candles,
+            })
+
+        response_data = {"coins": coins}
+        if invalid_markets:
+            response_data["invalid_markets"] = invalid_markets
+
+        return Response(response_data)
