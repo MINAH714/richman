@@ -5,11 +5,11 @@
 
       <aside class="mypage-side">
         <div class="side-profile">
-          <div class="side-avatar">{{ initial }}</div>
-          <div>
-            <p class="side-name">{{ authStore.user?.nickname || authStore.user?.username || '...' }}</p>
-            <p class="side-email">{{ authStore.user?.email || '' }}</p>
+          <div class="side-avatar">
+            <img v-if="authStore.user?.profile_image_url" :src="authStore.user.profile_image_url" alt="" />
+            <span v-else>{{ initial }}</span>
           </div>
+          <p class="side-name">{{ authStore.user?.nickname || authStore.user?.username || '...' }}</p>
         </div>
 
         <nav class="side-menu">
@@ -20,23 +20,18 @@
             :class="{ active: activeTab === item.key }"
             @click="activeTab = item.key"
           >
-            <i :class="`ti ${item.icon}`" aria-hidden="true"></i>
-            <span>{{ item.label }}</span>
+            <span class="side-menu__label">{{ item.label }}</span>
           </button>
         </nav>
 
-        <button class="side-logout" @click="logout">
-          <i class="ti ti-logout" aria-hidden="true"></i>
-          로그아웃
-        </button>
+        <button class="side-logout" @click="logout">로그아웃</button>
       </aside>
 
       <main class="mypage-content">
-        <SpendingTab    v-if="activeTab === 'spending'" />
-        <PortfolioTab   v-else-if="activeTab === 'portfolio'" />
-        <EditProfileTab v-else-if="activeTab === 'profile'" />
+        <SpendingTab  v-if="activeTab === 'spending'" />
+        <PortfolioTab v-else-if="activeTab === 'portfolio'" />
+        <MyProfileTab v-else-if="activeTab === 'profile'" />
       </main>
-
     </div>
   </div>
 </template>
@@ -45,19 +40,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
-import SpendingTab    from '@/components/mypage/SpendingTab.vue'
-import PortfolioTab   from '@/components/mypage/PortfolioTab.vue'
-import EditProfileTab from '@/components/mypage/EditProfileTab.vue'
+import SpendingTab  from '@/components/mypage/SpendingTab.vue'
+import PortfolioTab from '@/components/mypage/PortfolioTab.vue'
+import MyProfileTab from '@/components/mypage/MyProfileTab.vue'
 
 const authStore = useAuthStore()
 const router    = useRouter()
 
 const MENU = [
-  { key: 'spending',  label: '소비 분석',   icon: 'ti-chart-pie' },
-  { key: 'portfolio', label: '포트폴리오',   icon: 'ti-briefcase' },
-  { key: 'profile',   label: '프로필 수정',  icon: 'ti-user-edit' },
+  { key: 'profile',   label: '프로필' },
+  { key: 'portfolio', label: '포트폴리오' },
+  { key: 'spending',  label: '소비' },
 ]
-
 const activeTab = ref('spending')
 
 onMounted(() => {
@@ -65,7 +59,7 @@ onMounted(() => {
 })
 
 const initial = computed(() =>
-  (authStore.user?.nickname || authStore.user?.username || '?')[0].toUpperCase()
+  (authStore.user?.nickname || authStore.user?.username || '?')[0]
 )
 
 function logout() {

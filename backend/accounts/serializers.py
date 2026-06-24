@@ -23,10 +23,9 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """마이페이지 'Edit Profile'용 — User 모델 nickname/email 수정"""
     class Meta:
         model = User
-        fields = ['id', 'username', 'nickname', 'email']
+        fields = ['id', 'username', 'nickname', 'email', 'age']   # age 추가
         read_only_fields = ['id', 'username']
 
 

@@ -32,5 +32,6 @@ urlpatterns = [
     path('api/board/', include('board.urls')),
     path('api/commodities/', include('commodities.urls')),
     path('api/portfolio/', include('portfolio.urls')),
+    path('api/recommend/', include('recommend.urls')),
 
 ]

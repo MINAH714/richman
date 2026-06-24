@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'board',
     'commodities',
     'portfolio',
+    'recommend',
     
     'django.contrib.admin',
     'django.contrib.auth',
