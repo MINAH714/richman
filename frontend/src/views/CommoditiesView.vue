@@ -101,7 +101,7 @@
       </div>
 
     </div>
-
+    <RelatedVideoSection :keyword="selectedAsset === 'gold' ? '금 시세' : '은 시세'" />
   </div>
 
 </template>
@@ -136,6 +136,7 @@ import {
 
 import axios from 'axios'
 
+import RelatedVideoSection from '@/components/youtube/RelatedVideoSection.vue' 
 
 
 // Chart.js 필수 컴포넌트 등록

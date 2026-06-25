@@ -41,38 +41,38 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'   // ⭐ [신규 추가]
 import { searchVideos } from '@/api/youtube'
 import VideoCard from '@/components/youtube/VideoCard.vue'
+
+const route = useRoute()   // ⭐ [신규 추가]
 
 const keyword = ref('')
 const videos = ref([])
 const searched = ref(false)
 
 async function search() {
-
   if (!keyword.value) return
-
   const response = await searchVideos(keyword.value)
-
   videos.value = response.data.items
-
   searched.value = true
 }
 
-
 onMounted(() => {
-  loadRecommend()
+  // ⭐ [신규 추가] 차트 페이지의 "관련영상 더보기"에서 넘어온 경우, 그 키워드로 바로 검색
+  if (route.query.keyword) {
+    keyword.value = route.query.keyword
+    search()
+  } else {
+    loadRecommend()
+  }
 })
 
 async function loadRecommend() {
-
   const response = await searchVideos('미국 주식')
-
   videos.value = response.data.items.slice(0,5)
 }
 </script>
-
-<style scoped>
 
 .youtube-page{
   max-width:1200px;

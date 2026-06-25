@@ -176,6 +176,7 @@
 
       </aside>
     </div>
+    <RelatedVideoSection :keyword="`${coinMeta?.korean_name || marketId} 코인`" />
   </div>
 </template>
 
@@ -186,6 +187,7 @@ import VueApexCharts from 'vue3-apexcharts'
 import { useCryptoStore } from '@/stores/crypto'
 import { useAuthStore } from '@/stores/auth'
 import { cryptoAPI } from '@/api/crypto'
+import RelatedVideoSection from '@/components/youtube/RelatedVideoSection.vue' 
 
 const apexchart = VueApexCharts
 const route = useRoute()

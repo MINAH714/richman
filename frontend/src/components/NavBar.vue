@@ -29,9 +29,6 @@
             <li>
               <router-link to="/bank-map" class="dropdown-link">근처 은행 위치</router-link>
             </li>
-            <li>
-              <router-link to="/youtube" class="dropdown-link">관심 영상 자료</router-link>
-            </li>
           </ul>
         </li>
 
@@ -76,11 +73,20 @@
             AI 챗봇
           </router-link>
         </li>
-        <li>
-          <router-link to="/board" class="nav-item">
+        <li class="nav-item-dropdown">
+          <div class="nav-item">
             <i class="ti ti-message-circle" aria-hidden="true"></i>
-            게시판
-          </router-link>
+            커뮤니티
+            <i class="ti ti-chevron-down arrow" aria-hidden="true"></i>
+          </div>
+          <ul class="dropdown-menu">
+            <li>
+              <router-link to="/board" class="dropdown-link">게시판</router-link>
+            </li>
+            <li>
+              <router-link to="/youtube" class="dropdown-link">관심 영상 자료</router-link>
+            </li>
+          </ul>
         </li>
       </ul>
 

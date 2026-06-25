@@ -21,7 +21,7 @@
       <section class="net-worth-section">
         <span class="section-label">Total Net Worth</span>
         <div class="net-worth-value">
-          <h2 class="amount">₩{{ summary.total_assets.toLocaleString() }}</h2>
+          <h2 class="amount">₩{{ Math.floor(summary.total_assets).toLocaleString() }}</h2>
           <span class="badge-live">실시간</span>
         </div>
         <p class="update-time"><i class="ti ti-refresh"></i> 방금 업데이트됨</p>
@@ -39,7 +39,7 @@
             <DonutChart
               v-if="assetDonutData.length > 0"
               :categories="assetDonutData"
-              :total-expense="summary.total_assets"
+              :total-expense="Math.floor(summary.total_assets)"
               :color-map="assetColorMap"
               center-label="총 자산"
               :size="240"
@@ -94,8 +94,22 @@
                 <span class="asset-value">₩{{ totalCash.toLocaleString() }}</span>
                 <i class="ti ti-chevron-right arrow"></i>
               </div>
-            </div>   <!-- ⭐ [신규 추가] -->
+            </div>
+            <div class="list-row">
+              <div class="asset-info">
+                <div class="icon-box crypto-icon"><i class="ti ti-coin"></i></div>
+                <div class="asset-text">
+                  <p class="asset-name">크립토</p>
+                  <p class="asset-count">{{ (assets.crypto || []).length }}개의 코인</p>
+                </div>
+              </div>
+              <div class="asset-value-wrap">
+                <span class="asset-value">₩{{ totalCrypto.toLocaleString() }}</span>
+                <i class="ti ti-chevron-right arrow"></i>
+              </div>
+            </div> 
           </div>
+          
         </div>
       </section>
 
@@ -187,6 +201,36 @@
                 <span>평균 매입가</span>
                 <strong>{{ stock.currency === 'USD' ? '$' : '₩' }}{{ Number(stock.purchase_price).toLocaleString() }}</strong>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="portfolio-items outer-section-card">
+        <div class="section-header">
+          <h3>나의 현금 포트폴리오</h3>
+        </div>
+
+        <div v-if="(assets.cash || []).length === 0" class="empty-state">
+          <i class="ti ti-cash"></i>
+          <p>아직 등록한 현금 자산이 없습니다.</p>
+          <button class="btn-primary" @click="isCashModalOpen = true">현금 자산 추가하기</button>
+        </div>
+
+        <div v-else class="product-grid">
+          <div
+            v-for="cashItem in assets.cash"
+            :key="cashItem.id"
+            class="product-card-inner"
+          >
+            <button class="btn-delete-asset" @click.stop="handleDeleteItem(cashItem.id)" title="삭제">✕</button>
+            <div class="product-header">
+              <div class="icon-box-small cash-icon-small"><i class="ti ti-cash"></i></div>
+            </div>
+
+            <div class="product-body">
+              <p class="product-name" :title="cashItem.asset_name">{{ cashItem.asset_name }}</p>
+              <p class="product-amount">₩{{ Number(cashItem.invested_amount).toLocaleString() }}</p>
+              <p v-if="cashItem.memo" class="cash-memo">{{ cashItem.memo }}</p>
             </div>
           </div>
         </div>
@@ -316,10 +360,6 @@ const stocksRatio = computed(() => {
   return Math.round((totalStocks.value / total) * 100)
 })
 
-const totalCrypto = computed(() => {
-  return assets.value.crypto.reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
-})
-
 const cryptoRatio = computed(() => {
   const total = summary.value.total_assets
   if (!total || total === 0) return 0
@@ -328,6 +368,9 @@ const cryptoRatio = computed(() => {
 
 const totalCash = computed(() => {
   return (assets.value.cash || []).reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
+})
+const totalCrypto = computed(() => {
+  return (assets.value.crypto || []).reduce((acc, curr) => acc + Number(curr.invested_amount), 0)
 })
 
 const cashRatio = computed(() => {
@@ -404,8 +447,8 @@ const assetDonutData = computed(() => {
   const rows = [
     { category: 'savings', category_display: '예적금', amount: totalSavings.value },
     { category: 'stocks',  category_display: '주식',   amount: totalStocks.value },
-    { category: 'crypto',  category_display: '크립토', amount: totalCrypto.value },
     { category: 'cash',    category_display: '현금',   amount: totalCash.value },
+    { category: 'crypto',  category_display: '크립토', amount: totalCrypto.value },
   ]
 
   return rows
@@ -961,4 +1004,21 @@ onMounted(() => {
 .crypto-icon { background: #fffbeb; color: #f59e0b; }
 .crypto-icon-small { background: #fffbeb; color: #f59e0b; }
 .crypto-badge { background: #fffbeb; color: #d97706; }
+
+/* ⭐ [신규 추가] 크립토 아이콘 색상 */
+.crypto-icon {
+  background: #f5f3ff;
+  color: #8b5cf6;
+}
+/* ⭐ [신규 추가] 현금 카드 전용 스타일 */
+.cash-icon-small {
+  background: #ecfdf5;
+  color: #10b981;
+}
+.cash-memo {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary, #94a3b8);
+  margin: 4px 0 0;
+}
+
 </style>

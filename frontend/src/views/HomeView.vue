@@ -1,6 +1,6 @@
 // frontend/src/views/HomeView.vue
 <template>
-  <div class="home-wrapper" :class="{ 'is-scrolled': hasScrolled }">
+  <div class="home-wrapper" :class="{ 'is-scrolled': hasScrolled }">게시판
     
     <!-- 🌟 1. 완전 메인 (Cover Hero with Video Background) -->
     <section 
@@ -514,7 +514,7 @@ function changeClass(change) {
   font-size: 1.2rem;
   font-weight: 500;
   color: #475569;
-  max-width: 650px;
+  max-width: 850px;
   margin: 0 auto;
   line-height: 1.6;
   word-break: keep-all;

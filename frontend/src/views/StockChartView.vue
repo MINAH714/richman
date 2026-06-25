@@ -144,6 +144,7 @@
       </aside>
 
     </div>
+    <RelatedVideoSection :keyword="`${stockName} 주식`" />   <!-- ⭐ [신규 추가] -->
   </div>
 </template>
 
@@ -153,6 +154,7 @@ import { useRoute, useRouter } from 'vue-router'
 import VueApexCharts from 'vue3-apexcharts'
 import { getStockChart, getStockPrice } from '@/api/stocks'
 import { useWatchlistStore } from '@/stores/watchlist'
+import RelatedVideoSection from '@/components/youtube/RelatedVideoSection.vue'
 
 const apexchart = VueApexCharts
 const route  = useRoute()
