@@ -74,6 +74,7 @@ async function loadRecommend() {
 }
 </script>
 
+<style>
 .youtube-page{
   max-width:1200px;
   margin:auto;

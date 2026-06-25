@@ -1,6 +1,6 @@
 // frontend/src/views/HomeView.vue
 <template>
-  <div class="home-wrapper" :class="{ 'is-scrolled': hasScrolled }">게시판
+  <div class="home-wrapper" :class="{ 'is-scrolled': hasScrolled }">
     
     <!-- 🌟 1. 완전 메인 (Cover Hero with Video Background) -->
     <section 
