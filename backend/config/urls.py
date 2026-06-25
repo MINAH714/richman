@@ -16,8 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
+    path('api/token/', TokenObtainPairView.as_view()),
+    path('api/token/refresh/', TokenRefreshView.as_view()),
+    path("api/crypto/", include("crypto.urls")),
+    path("api/stocks/", include("stocks.urls")),
+    path("api/chat/", include("chatbot.urls")),
+    path("api/finlife/", include("finlife.urls")),
+    path('api/bankmap/', include('bankmap.urls')),
+    path('api/consumption/', include('consumption.urls')),
+    path('api/board/', include('board.urls')),
+    path('api/commodities/', include('commodities.urls')),
+    path('api/portfolio/', include('portfolio.urls')),
+    path('api/recommend/', include('recommend.urls')),
+
 ]

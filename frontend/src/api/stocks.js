@@ -1,0 +1,72 @@
+// src/api/stocks.js
+// 기존에 있던 공통 axios 인스턴스 (baseURL, JWT 헤더 인터셉터 등이 설정된 파일)
+import axios from './axios' 
+
+// ── 관심 종목 (Watchlist) ─────────────────────────────
+
+// 내 관심 종목 전체 조회
+export const getWatchlist = () =>
+  axios.get('/api/stocks/watchlist/')
+
+// 관심 종목 추가
+// payload 예시: { symbol: 'AAPL', name: 'Apple Inc.', market: 'NASDAQ' }
+export const addWatchlist = (payload) =>
+  axios.post('/api/stocks/watchlist/', payload)
+
+// 관심 종목 삭제
+// id: Watchlist 항목의 pk
+export const removeWatchlist = (id) =>
+  axios.delete(`/api/stocks/watchlist/${id}/`)
+
+// ── 포트폴리오 ────────────────────────────────────────
+
+// 포트폴리오 등록 or 수정 (있으면 수정, 없으면 생성)
+// watchlistId: 어떤 관심 종목에 대한 포트폴리오인지
+// payload 예시: { quantity: 10, average_price: 150.00 }
+export const upsertPortfolio = (watchlistId, payload) =>
+  axios.post(`/api/stocks/watchlist/${watchlistId}/portfolio/`, payload)
+
+// ── 현재가 조회 ──────────────────────────────────────
+
+// symbol 예시: 'AAPL', '005930.KS'
+export const getStockPrice = (symbol) =>
+  axios.get(`/api/stocks/price/${symbol}/`)
+
+// 차트 데이터 조회 (캔들 + 이동평균선 + 볼린저 밴드)
+// interval: '1d'(일봉) | '1wk'(주봉) | '1mo'(월봉) | '3mo'(분기봉)
+export const getStockChart = (symbol, interval = '1d') =>
+  axios.get(`/api/stocks/chart/${symbol}/`, { params: { interval } })
+
+// 종목 검색 자동완성
+// query 예시: 'apple', '삼성', 'AAPL'
+export const searchStocks = (query) => 
+  axios.get('/api/stocks/search/', { params: { q: query } })
+
+// ── AI 예측 기능 ─────────────────────────────────────
+
+// 특정 종목 AI 예측 실행
+// symbol: 티커, name: 종목명
+export const predictStock = (symbol, name) =>
+  axios.post(`/api/stocks/predict/${symbol}/`, { name })
+
+// 내 예측 히스토리 전체 조회
+export const getPredictionHistory = () =>
+  axios.get('/api/stocks/predictions/')
+
+// 예측 히스토리 단건 삭제
+export const deletePrediction = (id) =>
+  axios.delete(`/api/stocks/predictions/${id}/`)
+
+// ── 주식 대시보드 메인 ────────────────────────────────
+// 중복되던 import 문을 지우고, 최상단의 공통 axios 인스턴스를 바라보도록 단일화 수선 완료
+export const getStockDashboard = (tab, offset, count) => {
+  return axios.get('/api/stocks/dashboard/', {
+    params: { tab, offset, count }
+  })
+}
+
+// ⭐ [신규 추가] 주식 보유 내역을 portfolio 앱(UserPortfolio)에 등록
+// 마이페이지 포트폴리오 탭에 표시되는 주식 자산을 추가하는 API
+// payload 예시: { asset_code: 'AAPL', name: 'Apple Inc.', market: 'NASDAQ', quantity: 10, purchase_price: 150.0 }
+export const addStockHolding = (payload) =>
+  axios.post('/api/portfolio/stocks/add/', payload)

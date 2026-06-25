@@ -11,10 +11,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+
+environ.Env.read_env(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -25,7 +30,7 @@ SECRET_KEY = 'django-insecure-in6jri&2egn%$4_t_lwax6tal0vi09kl65n)7h(xv5t98_p@)%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -37,6 +42,15 @@ INSTALLED_APPS = [
     'accounts',
     'consumption',
     'crypto',
+    'stocks',
+    'chatbot',
+    'finlife',
+    'bankmap',
+    'board',
+    'commodities',
+    'portfolio',
+    'recommend',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -130,12 +144,72 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
+CORS_ALLOW_CREDENTIALS = True
+
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 👈 이 줄이 정확히 있는지 확인!
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # 인증된 유저만 접근 허용
     ),
 }
 
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET')
+
 AUTH_USER_MODEL = 'accounts.User'
+
+NAVER_CLIENT_ID = env('NAVER_CLIENT_ID')
+NAVER_CLIENT_SECRET = env('NAVER_CLIENT_SECRET')
+NAVER_REDIRECT_URI = env('NAVER_REDIRECT_URI')
+
+
+KAKAO_CLIENT_ID = os.environ.get('KAKAO_CLIENT_ID')
+KAKAO_CLIENT_SECRET = os.environ.get('KAKAO_CLIENT_SECRET', '')  # 없으면 빈 문자열
+KAKAO_REDIRECT_URI = os.environ.get('KAKAO_REDIRECT_URI')
+
+# config/settings.py 맨 아래에 추가
+NAVER_NEWS_CLIENT_ID = env('NAVER_NEWS_CLIENT_ID')
+NAVER_NEWS_CLIENT_SECRET = env('NAVER_NEWS_CLIENT_SECRET')
+
+OPENAI_API_KEY = env('OPENAI_API_KEY')
+OPENAI_BASE_URL = env('OPENAI_BASE_URL', default='https://gms.ssafy.io/gmsapi/api.openai.com/v1')
+
+KIWOOM_API_BASE_URL = env('KIWOOM_API_BASE_URL', default='https://api.kiwoom.com')
+KIWOOM_APP_KEY = env('KIWOOM_APP_KEY', default='')
+KIWOOM_SECRET_KEY = env('KIWOOM_SECRET_KEY', default='')
+KIWOOM_TIMEOUT_SECONDS = env.int('KIWOOM_TIMEOUT_SECONDS', default=8)
+KIWOOM_DASHBOARD_ENDPOINT = env('KIWOOM_DASHBOARD_ENDPOINT', default='/api/dostk/rkinfo')
+KIWOOM_DASHBOARD_API_ID = env('KIWOOM_DASHBOARD_API_ID', default='ka10027')
+KIWOOM_DASHBOARD_BODY = env('KIWOOM_DASHBOARD_BODY', default='')
+STOCK_DASHBOARD_PAGE_SIZE = env.int('STOCK_DASHBOARD_PAGE_SIZE', default=50)
+STOCK_DASHBOARD_MAX_PAGE_SIZE = env.int('STOCK_DASHBOARD_MAX_PAGE_SIZE', default=100)
+
+
+# config/settings.py
+import os
+from pathlib import Path
+
+# ... 기존 설정 생략 ...
+
+KIWOOM_APP_KEY = os.environ.get('KIWOOM_APP_KEY')
+KIWOOM_APP_SECRET = os.environ.get('KIWOOM_APP_SECRET')
+
+# 토큰 캐싱을 위한 기본 캐시 설정 유무 확인 (SQLite 환경이므로 Local Memory Cache 권장)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+
+KAKAO_REST_API_KEY = os.environ.get('KAKAO_REST_API_KEY')
